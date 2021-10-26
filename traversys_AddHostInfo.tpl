@@ -30,35 +30,36 @@ configuration diskCmds 1.0
 
 end configuration;
 
-pattern sanaware_aix_hbas_luns 1.0
+pattern traversys_add_hostinfo 1.0
 
     '''
     Author: Wes Moskal-Fitzpatrick
 
     Description:
-    This pattern is used to build detail nodes of LUNs and HBAs for a host.
+    Get additional info from a host.
 
     Supported Platforms:
-    AIX
+    Unix
 
     Change History:
-    2013-03-01: 1.0 WMF - Clean-up.
+    2013-03-01 | 1.0 | WMF | Created.
 
     '''
 
-    metadata
-        publishers:="Traversys Ltd";
-    end metadata;
-
     overview 
-        tags traversys, sanaware, wwpn, target, local, aix, remotewwpn; 
-    end overview; 
+        tags traversys, storage, hostinfo, custom;
+    end overview;
+    
+    constants
+        oracle_ka_cmd := '/usr/sbin/ndd';
+        linux_ka_cmd  := 'sysctl';
+    end constants;
 
     triggers 
         on host := Host created, confirmed;
     end triggers;
 
-  body
+    body
 
         // get vpd info
         get_scsi_id:= discovery.runCommand(host, diskCmds.scsi_id);
@@ -159,9 +160,151 @@ pattern sanaware_aix_hbas_luns 1.0
             large_box[logicalid]:=getletter;
         end for;
 
-  end body;
+        tcp_keep_alive := '';
+
+        log.info ('Running tcp_keep_alive cmd on %host.name%');
+        if host.os_type matches regex "(?i)\bLinux" then
+            command := discovery.runCommand(host, linux_ka_cmd + ' net.ipv4.tcp_keepalive_time');    
+        else
+            command := discovery.runCommand(host, oracle_ka_cmd + ' -get /dev/tcp tcp_keepalive_interval');
+        end if;
+
+        if command then
+            tcp_keep_alive := regex.extract(command.result, regex '= (\d+)', raw '\1');
+        end if;
+
+        host.tcp_keep_alive := tcp_keep_alive;
+
+    end body;
 
 end pattern;
+
+pattern traversys_getUninstallList 1.0
+  """
+    Retrieves the uninstall list of software from the registry.
+
+    Change History:
+    2013-10-22 | 1.0 | WMF | Created.
+
+  """
+
+  overview
+    tags wmi, custom, traversys;
+  end overview;
+
+  constants
+    regkey := ['HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'];
+  end constants;
+
+  triggers
+    on device := DeviceInfo where os_type matches regex "(?i)Windows";
+  end triggers;
+
+  body
+
+    host := model.host(device);
+
+    if not host then
+        log.error('No host node for: %device.name%');
+        stop;
+    end if;
+
+    hostname := host.hostname;
+
+    log.info ('%hostname%: Running Reg Query...');
+
+    for regkeys in regkey do
+    log.debug('%hostname%: Regkeys value: %regkeys%');
+
+        uninstall := discovery.registryKey(host, regkeys);
+        log.debug('%hostname%: Unistall key values retrieved: %uninstall%');
+    
+  end body;
+  
+end pattern;
+
+
+pattern traversys_getSyslog 1.0
+    """
+    This pattern is used to determine the existance of the SYSLOG patch and test for 'inp-ibuslog' within it.
+  
+    This pattern returns 3 possible outputs to 1 attribute (syslogconfig) to the host node.
+        1. Not found - the SYSLOG file could not be found
+        2. Found: Configured - The SYSLOG file is found and the string 'inp-ibuslog' is contained within it.
+        3. Found: Not Configured - The SYSLOG file is found but the string 'inp-ibuslog' is NOT contained within it.
+    
+    Author: Wes Fitzpatrick
+    
+    Change History:
+    2009-06-09 | 1.0 | WMF | Created.
+
+    Supported Platforms:
+    Unix
+
+    """
+    overview
+        tags traversys, syslog;
+    end overview;
+
+    triggers
+        on dev := DeviceInfo where os_class = 'UNIX';
+    end triggers;  
+
+    body
+	  
+        host := model.host(dev);
+        if not host then
+            log.error('model.host did not return a host node. Stopping.');
+            stop;
+        end if;
+    
+        hostname := host.name;
+        os_type := host.os_type;
+        log.info('~SYSLOG discovery pattern running for %os_type% on %hostname%.'); 
+    
+        //declare output variables
+        syslogconfig_output := '';
+    
+        //open /etc/sysconfig/syslog file to find ZONE
+        syslog_file := "/etc/syslog.conf";
+    
+    
+        get_syslog_file_cmd := discovery.fileGet(host, '%syslog_file%');
+        log.info('Opening %syslog_file% file on %hostname%.');
+   
+        if get_syslog_file_cmd then
+      
+            //extract syslog file contents
+            get_syslog_file := get_syslog_file_cmd.content;
+
+            //extract 'inp-ibuslog' from syslog file
+            syslog_ibuslog := regex.extract(get_syslog_file, regex '(inp-ibuslog)', raw '\1');
+      
+            if syslog_ibuslog then
+                log.info('%syslog_ibuslog% extracted from %syslog_file% file on %hostname%.');
+                syslogconfig_output := 'Found: Configured';
+            else
+                log.info('inp-ibuslog cannot be found in %syslog_file% file on %hostname%.');
+                syslogconfig_output := 'Found: Not Configured';
+            end if;
+        else  
+            syslogconfig_output := 'Not Found';
+        end if;
+     
+        log.info('Writing SYSLOG discovery data to host node attributes for %hostname%.');
+
+        if syslogconfig_output = '' then
+            model.withdraw(host,"syslogconfig");
+        else
+            host.syslogconfig := '%syslogconfig_output%';
+        end if;
+    
+	    log.info('~SYSLOG discovery pattern ended on %hostname%.');
+
+  end body;
+  
+end pattern;
+
 
 // The MIT License (MIT)
 
