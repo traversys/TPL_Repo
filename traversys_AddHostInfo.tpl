@@ -53,6 +53,8 @@ pattern traversys_add_hostinfo 1.0
     constants
         oracle_ka_cmd := '/usr/sbin/ndd';
         linux_ka_cmd  := 'sysctl';
+        namespace     := raw 'root\CIMV2';
+        wmiquery      := 'select DeviceID, Size, Freespace from Win32_LogicalDisk';
     end constants;
 
     triggers 
@@ -164,9 +166,25 @@ pattern traversys_add_hostinfo 1.0
 
         log.info ('Running tcp_keep_alive cmd on %host.name%');
         if host.os_type matches regex "(?i)\bLinux" then
-            command := discovery.runCommand(host, linux_ka_cmd + ' net.ipv4.tcp_keepalive_time');    
+            command := discovery.runCommand(host, linux_ka_cmd + ' net.ipv4.tcp_keepalive_time');
         else
             command := discovery.runCommand(host, oracle_ka_cmd + ' -get /dev/tcp tcp_keepalive_interval');
+            fls := model.FileSystem(host);
+            wmiquery_res := discovery.wmiQuery(host, wmiquery, namespace); 
+            wmiquery_devID := wmiquery_res.DeviceID;
+            wmiquery_FreeSpace := wmiquery_res.FreeSpace;
+            wmiquery_Size := wmiquery_res.Size;
+            attributes := [0, 1, 2, 3, 4, 5, 6];
+            for deviceID in wmiquery_devID do
+                for attribute in attributes do
+                    if deviceID[attribute] = "" then
+                        deviceID[attribute] := 'None';
+                    else
+                        devID := deviceID[attribute];
+                    end if;
+                end for;
+            end for;
+            fls.df_output := "%wmiquery_res%";
         end if;
 
         if command then
@@ -174,6 +192,37 @@ pattern traversys_add_hostinfo 1.0
         end if;
 
         host.tcp_keep_alive := tcp_keep_alive;
+
+        resolv_conf := '/etc/resolv.conf';
+        rc := discovery.fileGet(host, resolv_conf);
+        if rc then
+        // Extract attributes common to all Linux/Unixes
+            host.DNS_domain := regex.extract(rc.content, 'domain (.*)', raw'\1');
+            host.DNS_search_list := regex.extract(rc.content, 'search (.*)', raw'\1');
+            host.DNS_name_servers := regex.extractAll(rc.content, regex 'nameserver\s+(\S+)');
+        end if;
+        
+        if (device.os_type has subword 'Linux' or device.os_type has subword 'ESX') then
+            mtab := '/etc/mtab';
+            mt := discovery.fileGet(host, mtab);
+            if mt then
+                host.mtab_file := mt.content;
+            end if;
+        end if;
+
+        interface_name := search(in host traverse DeviceWithInterface:DeviceInterface:InterfaceOfDevice:NetworkInterface);
+  
+        if size(interface_name) > 0 then
+            for NIC in interface_name do
+            int_cmd := discovery.runCommand(host, "/sbin/ifconfig %NIC.name%");
+            if int_cmd then
+                int := '%int_cmd.result%';
+	            if int has substring "UP" and int has substring "RUNNING" then
+	                NIC.state := "UP";
+	            else
+	                NIC.state :="DOWN";
+	        end if;
+        end if;
 
     end body;
 
@@ -305,6 +354,139 @@ pattern traversys_getSyslog 1.0
   
 end pattern;
 
+
+
+pattern getHostInfoWindows 1.0
+    '''
+    Get additional host info from Windows.
+
+    Author: Wes Fitzpatrick
+    
+    Change History:
+    2009-06-09 | 1.0 | WMF | Created.
+
+    Supported Platforms:
+    Windows
+
+    '''
+  
+    overview
+        tags traversys, hostinfo, windows;
+    end overview;
+
+    triggers
+        on device := DeviceInfo where os_class matches regex'Windows';
+    end triggers;
+
+    body
+        host := related.host(device);
+
+        if not host then
+            stop;
+        end if;
+
+        wmi := discovery.wmiQuery(host, 'SELECT InstallDate,LastBootUpTime FROM Win32_OperatingSystem', 'root\CIMV2');
+        if wmi then
+            host.install_date := wmi[0].InstallDate;
+            host.last_Boot := wmi[0].LastBootUpTime;
+        end if;
+
+        wmi := discovery.wmiQuery(host, 'SELECT DNSServerSearchOrder,DNSDomainSuffixSearchOrder,WINSPrimaryServer,WINSSecondaryServer FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=1', 'root\CIMV2');
+        if wmi then
+            host.DNS_server_search_order := wmi[0].DNSServerSearchOrder;
+            host.DNS_domain_suffix_searchorder := wmi[0].DNSDomainSuffixSearchOrder;
+            host.wins_primary_server := wmi[0].WINSPrimaryServer;
+            host.wins_secondary_server := wmi[0].WINSSecondaryServer;
+        end if;
+
+        wmi := discovery.wmiQuery(host, 'SELECT IPXAddress FROM Win32_NetworkAdapterConfiguration WHERE IPXEnabled=1', 'root\CIMV2');
+        if wmi then
+            host.IPX_address := wmi[0].IPXAddress;
+        end if;
+
+        wmi := discovery.wmiQuery(host, 'SELECT Name,SMBIOSBIOSVersion,Version FROM Win32_BIOS', 'root\CIMV2');
+        if wmi then
+            host.smb_bios_name := wmi[0].Name;
+            host.smb_bios_version := wmi[0].SMBIOSBIOSVersion;
+            host.bios_version := wmi[0].Version;
+        end if;
+
+        wmi := discovery.wmiQuery(host, 'SELECT Name,FileSize,InitialSize,MaximumSize FROM Win32_PageFile', 'root\CIMV2');
+        if wmi then
+            host.page_name := wmi[0].Name;
+            host.file_size := wmi[0].FileSize;
+            host.initial_size := wmi[0].InitialSize;
+            host.maximum_size := wmi[0].MaximumSize;
+        end if;
+
+        wmi := discovery.wmiQuery(host, 'SELECT Name, Manufacturer, Caption FROM Win32_NetworkClient', 'root\CIMV2');
+        if wmi then
+            host.net_cli_name := wmi[0].Name;
+            host.net_manufacturer := wmi[0].Manufacturer;
+            host.caption := wmi[0].Caption;
+        end if;
+
+        reg := discovery.registryKey(host, raw'HKEY_LOCAL_MACHINE\SOFTWARE\Traversys\BuildData\BootCDVersion');
+        if reg then
+            host.boot_version := reg.value;
+        end if;
+
+        reg := discovery.registryKey(host, raw'HKEY_LOCAL_MACHINE\SOFTWARE\Traversys\BuildData\DistCDVersion');
+        if reg then
+            host.dist_cd_version := reg.value;
+        end if;
+        
+        reg := discovery.registryKey(host, raw'HKEY_LOCAL_MACHINE\SOFTWARE\Traversys\BuildData\LicenseDetail');
+        if reg then
+            host.license_detail := reg.value;
+        end if;
+
+        reg := discovery.registryKey(host, raw'HKEY_LOCAL_MACHINE\Software\JPMorgan\NT Build\CurrentVersion\MajorVersion');
+        if reg then
+            host.major_version := reg.value;
+        end if;
+
+        reg := discovery.registryKey(host, raw'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\RegisteredOwner');
+        if reg then
+            host.registered_owner := reg.value;
+        end if;
+
+        end body;
+
+    end pattern;
+
+pattern traversys_LastLogin 1.0
+    '''
+    Pattern to capture the output of the last command which shows last logged on users
+
+    Supported Platforms:
+    Unix
+
+    '''
+
+    overview
+        tags traversys, custom, last;
+    end overview;
+
+    triggers
+        on device := DeviceInfo where os_class = 'UNIX';
+    end triggers;
+
+    body
+    
+        host := related.host(device);
+        if not host then
+            stop;
+        end if;
+
+        last := discovery.runCommand(host, 'last -a -n 20');
+        if last and last.result then
+            host.last_login := last.result;
+        end if;
+
+    end body;
+
+end pattern;
 
 // The MIT License (MIT)
 

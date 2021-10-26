@@ -2413,6 +2413,12 @@ identify Yahoo 1.0
     windows_cmd 'YahooMessenger' -> 'traversys', 'Yahoo Instant Messenger Service';
 end identify;
 
+identify QuestToad 1.0
+    tags QuestToad;
+    DiscoveredProcess cmd -> simple_identity;
+    windows_cmd 'Toad' -> 'Quest TOAD for Oracle';
+end identify;
+
 // The MIT License (MIT)
 
 // Copyright Wes Moskal-Fitzpatrick 2013
