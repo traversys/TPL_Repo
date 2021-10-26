@@ -287,6 +287,30 @@ definitions traversys 1.0
         return vf, vt;
     end define;
 
+    // Quick Relationships
+    define model_rel(relationship,first,second)
+        """
+            Quick relationship inference.
+            First - the first ordinal node in the heirachy: i.e. the container or server
+            Second - the node to be subject: i.e. the contained, dependent or client
+        """
+        if relationship = "Containment" then
+            //model.rel.Containment(Container := node, Contained := node);
+            model.rel.Containment(Container:=first, Contained:=second);
+        elif relationship = "Dependency" then
+            //model.rel.Dependency(DependedUpon:=node,Dependant:=node);
+            model.rel.Dependency(DependedUpon:=first, Dependant:=second);
+        elif relationship = "Detail" then
+            //model.rel.Detail(ElementWithDetail:=node, Detail:=node);
+            model.rel.Detail(ElementWithDetail:=first, Detail:=second);
+        elif relationship = "Communication" then
+            //model.rel.Communication(Server:=node, Client:=node);
+            model.rel.Communication(Server:=first, Client:=second);
+        else
+            log.warn("Relationship %relationship% not recognised!");
+        end if;
+    end define;
+
 end definitions;
 
 // The MIT License (MIT)

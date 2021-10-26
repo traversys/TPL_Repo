@@ -1,4 +1,4 @@
-tpl 1.6 module traversys_SwiftMQ;
+tpl 1.6 module traversys_Microgen_Aptitude;
     
 metadata
     origin := "Traversys";
