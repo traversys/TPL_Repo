@@ -1,9 +1,20 @@
 tpl 1.6 module traversys_AdditionalHostInfo;
 
+// TODO: Refactoring and merge similar functions
+
 metadata
    origin:="Traversys";
    tree_path:='Traversys', 'Extended', 'Additional Host Info';
 end metadata;
+
+table command_list 1.0
+  "etc_passwd" -> "sed 's/^/file passwd:/' /etc/passwd";
+  "etc_group" -> "sed 's/^/file group:/' /etc/group";
+  "getent_passwd" -> "getent passwd | sed -e 's/:[^:]*:/:*:/' -e 's/^/getent passwd:/'";
+  "getent_group" -> "getent group | sed 's/^/getent group:/'";
+  "nis_domain" -> "domainname | sed 's/^/domain:/'";
+  "nis_master" -> "ypwhich -m passwd 2>/dev/null | sed 's/^/master:/'";
+end table;
 
 configuration diskCmds 1.0
 
@@ -72,6 +83,55 @@ pattern traversys_add_hostinfo 1.0
                 scsi_block_key:=regex.extract(id, regex 'scsi-\S+ ->\W+(\S+)', raw '\1');
                 scsi_id_tab[scsi_block_key]:=scsi_serial;
             end for;
+        end if;
+
+        dns_servers:= [];
+  
+        if host.os_type matches 'Linux' then
+            // Get resolve.conf
+            resolve_conf:= discovery.fileGet(host, "/etc/resolv.conf");
+
+            // Get output of nmcli
+            nmcli:= discovery.runCommand(host, "nmcli d list");
+        
+            // Get content of dhclient leases
+            dhcl_lease:= discovery.fileGet(host, "/var/lib/dhclient/dhclient-eth0.leases");
+        
+            cmd_linux:= discovery.runCommand(host, "grep nameserver /etc/resolv.conf | awk '{print $2}'");
+            
+            // Legacy command
+            if cmd_linux and cmd_linux.result then
+                dns_servers:= cmd_linux.result;
+            end if;
+            
+        elif host.os_class = "Windows" then
+        
+            ip_config:= discovery.runCommand(host, "ipconfig /all");
+            
+            if ip_config and ip_config.result then
+                dns_entry:= regex.extractAll(ip_config.result, regex "DNS\sServers(\s\.)+\s:\s(\S+)(\s+(\S+))");
+                log.debug("DNS server entry = %dns_entry%");
+                if size(dns_entry) > 0 then
+                    dns_extract:= dns_entry[0];
+                    for i in dns_extract do
+                        log.debug("i = %i%");
+                        ip:= regex.extract(i, regex "((\d+\.?)+)", raw "\1");
+                        if ip not in dns_servers and ip matches "^\d+\." then
+                            list.append(dns_servers, ip);
+                        end if;
+                    end for;
+                end if;
+            end if;
+            
+        end if;
+        
+        if size(dns_servers) > 0 then
+            host.DNSServers:= dns_servers;
+            model.addDisplayAttribute(host, "DNSServers");
+            //host._tw_meta_data_attrs:= [ 'DNSServers' ];
+        else
+            model.withdraw(host, "DNSServers");
+            model.removeDisplayAttribute(host, "DNSServers");
         end if;
 
         // look for redhat4 blocks if none found via rhel5 method
@@ -223,6 +283,45 @@ pattern traversys_add_hostinfo 1.0
 	                NIC.state :="DOWN";
 	        end if;
         end if;
+
+        usb_results := discovery.wmiQuery(host, "SELECT * FROM Win32_DiskDrive WHERE InterfaceType = 'USB'", "root\CIMV2" );
+        count:= 0
+        for result in usb_results do
+            for key in result do
+                count:= count+1
+                host.['%key%_%count%']:=key[count];
+            end for;
+        end for;
+
+        command_names := ["etc_passwd", "etc_group", "getent_passwd", "getent_group", "nis_domain", "nis_master"];
+
+        for command_name in command_names do
+            test_command := command_list[command_name];
+            run_command := discovery.runCommand(host, test_command);
+            if run_command then
+                run_command_result := run_command.result;
+                if run_command_result = '' then
+                    //destroy host node attributes
+                    model.withdraw(host,"%command_name%");
+                else
+                    //write results to host node attributes
+                    log.info("Writing data to host.%command_name% on %hostname%.");
+                    if command_name = 'etc_passwd' then
+                        host.etc_passwd := run_command_result;
+                    elif command_name = 'etc_group' then
+                        host.etc_group := run_command_result;
+                    elif command_name = 'getent_passwd' then
+                        host.getent_passwd := run_command_result;
+                    elif command_name = 'getent_group' then
+                        host.getent_group := run_command_result;
+                    elif command_name = 'nis_domain' then
+                        host.nis_domain := run_command_result;
+                    elif command_name = 'nis_master' then
+                        host.nis_master := run_command_result;
+                    end if;
+                end if;
+            end if;
+        end for;
 
     end body;
 
@@ -488,9 +587,354 @@ pattern traversys_LastLogin 1.0
 
 end pattern;
 
+pattern Win2008Fix 1.0
+    """
+        This pattern fixes Windows Version 6.1.7601 which stands for both Windows 7 and Windows 2008 R2.
+        If WMI and RemQuery fails - then the OS name string is not returned.
+        Infra is not managed by CG acount team so WMI cannot be fixed.
+
+        Change History:
+        2018-05-01 1.0 WMF : Created.
+
+        Validation Query:
+        search Host where os = 'Microsoft Windows [Version 6.1.7601]'
+        show name, type, os_version, os, age_count, #:::DiscoveryAccess.#:::DeviceInfo.os
+        
+    """
+
+    overview
+        tags Windows, Traversys;
+    end overview;
+
+    triggers
+        on host:= Host created, confirmed where os = "Microsoft Windows [Version 6.1.7601]";
+    end triggers;
+
+    body
+   
+        sysinfo:= discovery.runCommand(host, 'systeminfo | findstr /B /C:"OS Name" /C:"OS Version" /C:"OS Manufacturer"');
+        
+        reqlist:= discovery.listRegistry(host, raw "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+        reg_product_name:= discovery.registryKey(host, raw "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProductName");
+        reg_release_id:= discovery.registryKey(host, raw "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ReleaseId"); // doesn't seem to work
+        
+        host_os:= host.os;
+   
+        if sysinfo and sysinfo.result then
+            host_os:= regex.extract(sysinfo.result, regex "OS Name:\s+(.*)", raw "\1");
+            host_ver:= regex.extract(sysinfo.result, regex "OS Version:\s+(.*)", raw "\1");
+            host_man:= regex.extract(sysinfo.result, regex "OS Manufacturer:\s+(.*)", raw "\1");
+            host.os:= "%host_os% Version %host_ver%";
+            host.os_version:= regex.extract(host_os, regex "Microsoft Windows (.*) (Enterprise|Standard)", raw "\1", no_match:= host_os);
+            host.os_edition:= regex.extract(host_os, regex "Microsoft Windows (.*) (Enterprise|Standard)", raw "\2", no_match:= host_os);
+        elif reg_product_name and reg_product_name.value then
+            host_os:= reg_product_name.value;
+            host.os:= host_os;
+            host.os_version:= regex.extract(host_os, regex "Windows (.*) (Enterprise|Standard)", raw "\1", no_match:= host_os);
+            host.os_edition:= regex.extract(host_os, regex "Windows (.*) (Enterprise|Standard)", raw "\2", no_match:= host_os);
+        end if;
+        
+        if host_os matches "Windows 7" then
+            host.host_type:= "Windows Desktop";
+            host.type:= "Windows Desktop";
+            host.tsys_os_modified:= true;
+        end if;
+        
+    end body;
+
+end pattern;
+
+
+pattern LastPatch 1.0
+    """
+        Extract the last patch date of the server.
+
+        Change History:
+        2018-05-04 1.0 WMF : Created.
+        
+    """
+
+    overview
+        tags Patch, Windows, Traversys;
+    end overview;
+    
+    constants
+        registry_key := raw "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\Results\Install\LastSuccessTime";
+    end constants;
+
+    triggers
+        on host:= Host created, confirmed where os_type = "Windows";
+    end triggers;
+
+    body
+    
+        last_patch:= discovery.runCommand(host, "powershell \"Get-HotFix | sort InstalledOn -Descending | select HotFixID, @{Name='Installed'; Expression={'{0:dd MMMM yyyy}' -f [datetime]$_.InstalledOn.Tostring()}} -First 1\"");
+        
+        reg_last:= discovery.registryKey(host, registry_key);
+        
+        if last_patch and last_patch.result then
+            host.tsys_last_hotfix := regex.extract(last_patch.result, regex "(KB\d+)", raw "\1");
+            host.tsys_last_hotfix_date := regex.extract(last_patch.result, regex "KB\d+\s+(\d+\s\w+\s\d+)", raw "\1");
+        elif reg_last and reg_last.result then
+            host.tsys_last_hotfix_date := regex.extract(last_patch.result, regex "(\d+-\d+-\d+)", raw "\1");
+        end if;
+        
+    end body;
+
+end pattern;
+
+
+pattern BuildDate 1.0
+    """
+        Get the build date for the server.
+
+        Change History:
+        2018-06-15 1.0 WMF : Created.
+        
+    """
+
+    overview
+        tags Build, Traversys;
+    end overview;
+    
+    constants
+        registry_key := raw "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\Results\Install\LastSuccessTime";
+    end constants;
+
+    triggers
+        on host:= Host created, confirmed;
+    end triggers;
+
+    body
+    
+        raw_date:= "";
+    
+        if host.os_class = "Windows" then
+            build:= discovery.runCommand(host, 'systeminfo | find /i "date"');
+            if build and build.result then
+                raw_date:= regex.extract(build.result, regex "Original Install Date:\s+(.*)", raw "\1", no_match:= build.result);
+            end if;
+        elif host.os_type matches "AIX" then
+            build:= discovery.runCommand(host, 'lslpp -h | grep -p bos.rte');
+            if build and build.result then
+                raw_date:= regex.extract(build.result, regex "(\d+/\d+/\d+\s+(\d+:?)+)", raw "\1", no_match:= build.result);
+            end if;
+        elif host.os_type matches "Solaris" then
+            build:= discovery.runCommand(host, 'pkg info kernel');
+            if build and build.result then
+                raw_date:= regex.extract(build.result, regex "Packaging Date:\s+(.*)", raw "\1", no_match:= build.result);
+            end if;
+        elif host.os_type matches "HP-UX" then
+            build:= discovery.runCommand(host, '/opt/ignite/bin/print_manifest | more');
+            if build and build.result then
+                raw_date:= regex.extract(build.result, regex "The system was created\s(.*)\.", raw "\1", no_match:= build.result);
+            end if;
+        else // Linux
+            build:= discovery.runCommand(host, 'ls -ld --time-style=long-iso /var/log/anaconda 2> /dev/null || ls -ld --time-style=long-iso /var/log/installer 2> /dev/null');
+            if build and build.result then
+                raw_date:= regex.extract(build.result, regex "(\d{4}-\d+-\d+\s\d+:\d+)", raw "\1", no_match:= build.result);
+            end if;
+        end if;
+        
+        host.tsys_install_date := raw_date;
+        
+    end body;
+
+end pattern;
+
+
+pattern LastLogon 1.1
+
+"""
+    Last User Logged On
+    
+    Change History:
+    2016-07-18 - 1.1 - WF: Fixed.
+
+"""
+
+metadata
+    __name := 'UserLoggedOn';
+    __description := 'This TPL discovers which user was last logged on to a desktop host';
+end metadata;
+
+overview
+    tags COE, logon;
+end overview;
+
+constants
+    lou_wmi_query := raw 'select LastLogon, Name, UserType from Win32_NetworkLoginProfile';
+    wmi_namespace := raw 'root\CIMV2';
+    detail_type := 'Last User Logon';
+end constants;
+
+triggers
+    on host := Host created, confirmed where os_class = "Windows";
+end triggers;
+
+    body
+        
+        // initialise variables  
+        last_time_stamp:= "";
+        wmi_detail:= "";
+
+        // Carry out WMI query 
+        wmi_results := discovery.wmiQuery(host, lou_wmi_query, wmi_namespace);
+        
+        if not wmi_results then
+            log.warn("WMI query failed or did not run, stopping....");
+            stop;
+        end if;
+
+        for wmiresult in wmi_results do
+            if "LastLogon" not in wmiresult then
+                log.warn("No LastLogon detail returned from wmi query, skipping...");
+                continue;
+            end if;
+            // Obtain results and assign attributes to Detail node then relate to trigger Host
+            wmiresultll:= wmiresult.LastLogon;
+            log.info("wmi LastLogon = %wmiresultll%");
+            wmilastlogon:= regex.extract(wmiresultll, regex "(\d+)\.", raw "\1");
+            log.debug("wmilastlogon = %wmilastlogon%");
+            ydmhms:= regex.extractAll(wmilastlogon, regex "^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})");
+            log.debug("ydmhms = %ydmhms%");
+            
+            size_ydmhms:= size(ydmhms);
+            
+            if size_ydmhms = 0 then
+                log.warn("Extraction failed, skipping...");
+                continue;
+            end if;
+            
+            // format 20160718071738
+            yyyy:= ydmhms[0][0];
+            mm:= ydmhms[0][1];
+            dd:= ydmhms[0][2];
+            hh:= ydmhms[0][3];
+            m:= ydmhms[0][4];
+            s:= ydmhms[0][5];
+            last_logon_tmp:= "%yyyy%-%mm%-%dd% %hh%:%m%:%s%";
+            log.debug("last_logon_tmp = %last_logon_tmp%");
+            last_logon_s:= time.parseUTC(last_logon_tmp);
+            log.debug("last_logon_s = %last_logon_s%");
+            
+            if not last_time_stamp then
+                last_time_stamp:= last_logon_s;
+                wmi_detail:= wmiresult;
+            end if;
+            
+            if last_logon_s and last_logon_s > last_time_stamp then
+                log.info("Updating timestamp and wmi detail");
+                // Converts date to readable format yyyymmdd
+                last_time_stamp:= last_logon_s;
+                wmi_detail:= wmiresult;
+            end if;
+        end for;
+        
+        if wmi_detail then
+            log.info("Creating WMI Detail");
+            name := wmi_detail.Name;
+            user_type := wmi_detail.UserType;
+            dtl := model.Detail(
+                                    key := text.hash("%host.key%/%host.hostname%/%wmi_detail.LastLogon%"),
+                             last_logon := last_time_stamp,
+                                   name := name,
+                                   type := detail_type,
+                              user_type := user_type
+                              );
+            
+            model.setRemovalGroup(dtl, "last User Login");
+            model.rel.Detail(ElementWithDetail := host, Detail := dtl);
+            
+        end if;
+        
+    end body;
+
+end pattern;
+
+
+pattern SI_OU 1.0
+    '''
+        Pattern to identify server based of OU group membership in the Microsoft Active Directory
+        
+        Change History:
+        2015-06-26 1.0 WF : Fixed the orgunit_rels relationship destroy for ADDM v10.1
+       
+        Supported Platforms:
+        Windows
+        
+    '''
+
+    overview
+        tags OU;
+    end overview;
+    
+    constants
+        // This is the list of OU groups to search for. Must be entered exactly as to be discovered (case sensitive).
+        searchOUs := [ 'Member Servers', 'Application Servers', 'Exchange Servers',	'File Servers', 'Infrastructure Servers', 'Print Servers', 'Web Servers', 'SQL Servers', 'Database Servers', 'Management Servers', 'Reporting Servers' ];
+
+	end constants;	
+	
+    triggers        
+        // Trigger this patterno n the discovery of any Windows host
+        on drv_host  := Host created, confirmed where host_type = 'Windows Server';
+    end triggers;
+
+    body
+        // Temporary type name, this will be replaced
+        type := 'Organization Unit - New Pattern Test';
+        
+        // Get host details
+        host := model.host(drv_host);
+        hostname := host.hostname;
+		
+		orgunit_rels:= host.#OwnedItem:Ownership;
+        
+        // Legacy 8.3 function
+        // orgunit_rels := host.#OwnedItem:Ownership:Owner;
+		
+		// Destroy all the OrganisationUnit relationships, then rediscover them
+        for orgunit_rel in orgunit_rels do
+            owner:= search(in orgunit_rel step out Owner:OrganisationalUnit);
+            if owner then
+                model.destroy(orgunit_rel);
+            end if;
+        end for;
+		
+        for ou in searchOUs do;
+            getRKey := discovery.registryKey(host, raw "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Distinguished-Name");
+            if getRKey and getRKey.value then
+                if "%getRKey.value%" matches expand(regex "OU=%ou%", ou) then                             
+                            
+                            orgunit_name := ou;
+                            already_linked := false;
+                            // orgunit_rels := host.#OwnedItem:Ownership:Owner;
+
+                            for orgunit_rel in orgunit_rels do
+                                owner:= search(in orgunit_rel step out Owner:OrganisationalUnit);
+                              //if orgunit_rel.#:OrganisationalUnit.name = orgunit_name then
+                              if owner.name = orgunit_name then
+                                  already_linked := true;
+                              end if;
+                            end for;
+                             
+                            if not already_linked then
+                               // Find the Organisational Unit node(s) for the OrgUnit
+                               org_unit := search(OrganisationalUnit where name = %orgunit_name%);
+                             
+                               // Create relationship
+							   model.rel.Ownership(OwnedItem := host, Owner := org_unit);
+                            end if;                      
+
+                end if;                
+            end if;        
+        end for;        
+    end body;    
+end pattern;  
+
 // The MIT License (MIT)
 
-// Copyright Wes Moskal-Fitzpatrick 2013
+// Copyright Wes Moskal-Fitzpatrick 2013-2021
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal

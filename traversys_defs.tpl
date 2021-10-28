@@ -311,6 +311,83 @@ definitions traversys 1.0
         end if;
     end define;
 
+    // Quick Searches
+    define hostedSoftware(node,type) -> results
+        """
+            Get software running on a particular host node.
+        """
+        results:=search(in node
+                        traverse :HostedSoftware::SoftwareInstance 
+                            where type = "%type%");
+        end if;
+        return results;
+    end define;
+
+    define peerSoftware(node) -> results
+        """
+            Get peer communicating software.
+        """
+        results:=search(in node
+                        traverse Peer:Communication:Peer:SoftwareInstance);
+        return results;
+    end define;
+
+    define allSoftware(node) -> results
+        """
+            Get software running on the same host.
+        """
+        hostnode:=related.host(node);
+        results:=search(in hostnode traverse Host:HostedSoftware:RunningSoftware:SoftwareInstance);
+        return results;
+    end define;
+
+    define artificialAging(existing_nodes, new_nodes, age)
+        """
+            Arbitrarily age-out (remove) nodes based on key creation.
+        """
+        now := time.current();
+        threshold := time.delta(days:=age);
+        for n in current_nodes do
+            list.append(existing_keys , n.key);
+        end for;
+        for n in new_nodes do
+            list.append(new_keys , n.key);
+        end for;
+        key_removal := [];
+        for key in existing_keys do
+            if key not in new_keys then
+                list.append(key_removal,  key);
+            end if;
+        end for;
+        if size(key_removal) > 0 then
+            for n in existing_nodes do
+                if n.key in key_removal then
+                    if now - node.last_seen > threshold then
+                        log.warn("%node.name% older than %age%, removing...");
+                        model.destroy(node);
+                    end if;
+                end if;
+            end for;
+        end if;
+    end define;
+
+    define delHostDuplicates(hostnode)
+        """
+            Remove duplicate hosts (identity change from upgrade/migration or UUID duplication).
+        """
+        host_age:= hostnode.age_count;
+        other_hosts:= search(Host where name = "%hostnode.name%");
+        if size(other_hosts) > 1 then
+            for node in other_hosts do
+                if node.age_count < host_age then
+                    log.debug("Host %node.name%, age count < %hostnode.age_count%");
+                    log.warn("Removing host %node.name% type %node.type% key %node.key%...");
+                    model.destroy(hostnode);
+                end if;
+            end for;
+        end if;
+    end define;
+
 end definitions;
 
 // The MIT License (MIT)
