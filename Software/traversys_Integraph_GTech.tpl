@@ -53,7 +53,7 @@ definitions tsys_ig 1.0
                                     pid:= service.pid,
                                     _traversys:= true
                                     );
-        model.setRemovalGroup(si, "sis");
+        model.setRemovalGroup(si, "%type%_sis");
         
         pp:= search(in all_procs where pid = %service.pid%);
         inference.primary(si, pp);
@@ -116,10 +116,6 @@ pattern Traversys_SI_GTech 1.0
 
     """
 
-    overview
-        tags gtechnology, gis, integraph, traversys;
-    end overview;
-
     metadata
         products := 'Integrapth G/Technology';
         urls := 'https://www.hexagonsafetyinfrastructure.com/products/utilities-and-communications-products/advanced-utility-gis/intergraph-gtechnology';
@@ -127,6 +123,10 @@ pattern Traversys_SI_GTech 1.0
         categories := 'Geographical Information System Mapping';
         known_versions := '0';
     end metadata;
+
+    overview
+        tags gtechnology, gis, integraph, traversys;
+    end overview;
 
     triggers
         on service:= DiscoveredService where (name matches regex "^(?i)intergraph"
