@@ -97,7 +97,7 @@ definitions tsys_ig 1.0
                                     product_version:= pr_version,
                                     _traversys:= true
                                     );
-        model.setRemovalGroup(si, "sis");
+        model.setRemovalGroup(si, "%type%_sis");
         
         return si;
 

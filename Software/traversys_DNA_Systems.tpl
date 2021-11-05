@@ -5,8 +5,6 @@ metadata
     tree_path := 'Traversys', 'Software', 'DNA Systems', 'OpenAdapter';
 end metadata;
 
-
-
 pattern OpenAdapter 1.0
     '''
     OpenOffice Server
