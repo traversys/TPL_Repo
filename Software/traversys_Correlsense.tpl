@@ -2,7 +2,7 @@ tpl 1.9 module traversys_Correlsense;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Correlsense';
+    tree_path := 'Traversys', 'Software', 'Correlsense', 'Correlsense APM';
 end metadata;
 
 pattern Traversys_SI_Correlsense 1.0

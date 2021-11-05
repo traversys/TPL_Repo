@@ -2,7 +2,7 @@ tpl 1.9 module traversys_Broadcom_CA_Licensing;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Broadcom CA License Server';
+    tree_path := 'Traversys', 'Software', 'Broadcom', 'CA License Server';
 end metadata;
 
 

@@ -2,7 +2,7 @@ tpl 1.9 module traversys_Bentley_SELECT;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Bentley SELECT';
+    tree_path := 'Traversys', 'Software', 'Bentley Systems', 'SELECTServer';
 end metadata;
 
 pattern Traversys_SI_SELECTServer 1.0

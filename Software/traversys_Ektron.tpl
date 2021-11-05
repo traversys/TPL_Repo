@@ -2,7 +2,7 @@ tpl 1.9 module traversys_ArcIMS;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Optimizely Ektron CMS';
+    tree_path := 'Traversys', 'Software', 'Optimizely', 'Ektron CMS';
 end metadata;
 
 pattern Traversys_SI_EktronCMS 1.0

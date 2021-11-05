@@ -2,7 +2,7 @@ tpl 1.6 module traversys_Axios_Assyst;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Axios Assyst';
+    tree_path := 'Traversys', 'Software', 'Axios', 'Assyst';
 end metadata;
 
 pattern Traversys_SI_Assyst 1.0

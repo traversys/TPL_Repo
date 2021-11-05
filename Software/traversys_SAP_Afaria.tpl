@@ -2,7 +2,7 @@ tpl 1.9 module traversys_SAP_Afaria;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'SAP Afaria';
+    tree_path := 'Traversys', 'Software', 'SAP', 'Afaria';
 end metadata;
 
 pattern Traversys_SI_MBusiness 1.0

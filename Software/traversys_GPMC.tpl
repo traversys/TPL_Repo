@@ -2,7 +2,7 @@ tpl 1.6 module traversys_GPMC;
 
 metadata
   __name        := 'Microsoft Group Policy Management Console';
-  tree_path     := 'Traversys', 'Software', 'Microsoft Group Policy Management Console';
+  tree_path     := 'Traversys', 'Software', 'Microsoft', 'Group Policy Management Console';
 end metadata;
 
 pattern Traversys_SI_AD_GPMC 1.2

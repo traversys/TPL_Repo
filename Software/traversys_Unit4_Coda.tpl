@@ -2,7 +2,7 @@ tpl 1.9 module traversys_Unit4_Coda;
 
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Unit4 Coda Financials';
+    tree_path := 'Traversys', 'Software', 'Unit4', 'Coda Financials';
 end metadata;
 
 pattern Traversys_SI_Coda_Financials 1.0

@@ -1,8 +1,8 @@
-tpl 1.6 module traversys_Microgen_Aptitude;
+tpl 1.9 module traversys_Microgen_Aptitude;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Microgen Aptitude';
+    tree_path := 'Traversys', 'Software', 'Microgen', 'Aptitude';
 end metadata;
 
 

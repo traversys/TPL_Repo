@@ -1,8 +1,8 @@
-tpl 1.6 module traversys_NetworkRail_ALCRM;
+tpl 1.9 module traversys_NetworkRail_ALCRM;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Network Rail ALCRM';
+    tree_path := 'Traversys', 'Software', 'Network Rail', 'All Level Crossing Risk Model (ALCRM)';
 end metadata;
 
 pattern Traversys_SI_NRALCRM 1.0

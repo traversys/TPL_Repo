@@ -2,7 +2,7 @@ tpl 1.9 module traversys_Fidessa;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'ION Group Fidessa';
+    tree_path := 'Traversys', 'Software', 'ION Group', 'Fidessa';
 end metadata;
 
 definitions tsys_if 1.0

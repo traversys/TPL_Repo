@@ -1,8 +1,8 @@
-tpl 1.6 module traversys_RIB_Lizenzmanagement;
+tpl 1.9 module traversys_RIB_Lizenzmanagement;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'RIB Lizenzmanagement';
+    tree_path := 'Traversys', 'Software', 'RIB Software AG', 'Lizenzmanagement';
 end metadata;
 
 

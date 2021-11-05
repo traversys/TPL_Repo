@@ -2,7 +2,7 @@ tpl 1.9 module traversys_FAST_InStream;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Oracle Siebel FAST InStream';
+    tree_path := 'Traversys', 'Software', 'Oracle', 'Siebel FAST InStream';
 end metadata;
 
 pattern Traversys_SI_FAST_InStream 1.0

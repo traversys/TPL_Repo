@@ -2,7 +2,7 @@ tpl 1.9 module traversys_McLaren_DocLoader;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'McLaren DocLoader';
+    tree_path := 'Traversys', 'Software', 'McLaren', 'DocLoader';
 end metadata;
 
 pattern Traversys_SI_McLaren_DocLoader 1.0

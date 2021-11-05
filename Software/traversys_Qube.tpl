@@ -1,8 +1,8 @@
-tpl 1.6 module traversys_MRI_Qube;
+tpl 1.9 module traversys_MRI_Qube;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'MRI Qube Property Management';
+    tree_path := 'Traversys', 'Software', 'MRI', 'Qube Property Management';
 end metadata;
 
 

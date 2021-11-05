@@ -2,7 +2,7 @@ tpl 1.6 module traversys_OpenOffice;
 
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'OpenOffice';
+    tree_path := 'Traversys', 'Software', 'Apache', 'OpenOffice';
 end metadata;
 
 

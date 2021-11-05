@@ -1,28 +1,28 @@
-tpl 1.6 module traversys_SwiftMQ;
+tpl 1.9 module traversys_SwiftMQ;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'SwiftMQ';
+    tree_path := 'Traversys', 'Software', 'ITT Software', 'SwiftMQ';
 end metadata;
 
 pattern traversys_SwiftMQ 1.0
     """
-    Author: Wes Moskal-Fitzpatrick (Traverys Limited)
-    
-    This pattern creates an SI for SwiftMQ.
-    
-    The pattern:-
-      1. Triggers on swiftmq discovered process.
-      2. Extracts the application string from the process.
-      3. Extracts the version from the process string.
-      4. Models the SoftwareInstance for the SwiftMQ SI.
-      5. Adds related SIs to the containment via process children.
-      
-    Change History:
-    2014-10-20 | 1.0 | WMF | Created.
-    
-    Supported Platforms:
-    N/A
+        Author: Wes Moskal-Fitzpatrick (Traverys Limited)
+        
+        This pattern creates an SI for SwiftMQ.
+        
+        The pattern:-
+          1. Triggers on swiftmq discovered process.
+          2. Extracts the application string from the process.
+          3. Extracts the version from the process string.
+          4. Models the SoftwareInstance for the SwiftMQ SI.
+          5. Adds related SIs to the containment via process children.
+          
+        Change History:
+        2014-10-20 | 1.0 | WMF | Created.
+        
+        Supported Platforms:
+        N/A
     
     """    
   
@@ -33,11 +33,11 @@ pattern traversys_SwiftMQ 1.0
     end metadata;
   
     overview
-      tags custom, traversys, SwiftMQ, JBoss, MQ;
+        tags custom, traversys, SwiftMQ, JBoss, MQ;
     end overview;
 
     triggers
-      on p := DiscoveredProcess where cmd matches windows_cmd "cmd" and args matches regex "\bswiftmq\w";
+        on p := DiscoveredProcess where cmd matches windows_cmd "cmd" and args matches regex "\bswiftmq\w";
     end triggers;
 
     body
@@ -76,7 +76,7 @@ pattern traversys_SwiftMQ 1.0
         
         inference.associate(si, cps);
 
-  end body;
+    end body;
 
 end pattern;
 

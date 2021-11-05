@@ -2,7 +2,7 @@ tpl 1.9 module traversys_eB_Insight;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Bentley eB Insight';
+    tree_path := 'Traversys', 'Software', 'Bentley Systems', 'eB Insight';
 end metadata;
 
 pattern Traversys_SI_eBServiceManager 1.0

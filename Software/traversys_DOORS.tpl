@@ -2,7 +2,7 @@ tpl 1.9 module traversys_IBM_DOORS;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'IBM Rational DOORS';
+    tree_path := 'Traversys', 'Software', 'IBM', 'Rational DOORS';
 end metadata;
 
 pattern Traversys_SI_IBM_DOORS 1.0

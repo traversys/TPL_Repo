@@ -1,10 +1,9 @@
-tpl 1.6 module traversys_Alchemy;
+tpl 1.9 module traversys_Alchemy;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Alchemy';
+    tree_path := 'Traversys', 'Software', 'Alchemy', 'License Manager';
 end metadata;
-
 
 pattern Traversys_SI_Alchemy_License_Manager 1.0
     '''

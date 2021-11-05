@@ -2,7 +2,7 @@ tpl 1.9 module traversys_Broadcom_ARDS;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Broadcom ARDS';
+    tree_path := 'Traversys', 'Software', 'Broadcom', 'Advanced Repository for Distributed Systems (ARDS)';
 end metadata;
 
 pattern Traversys_SI_ARDS 1.0

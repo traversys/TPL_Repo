@@ -1,8 +1,8 @@
-tpl 1.6 module traversys_SafeSoftware_FME;
+tpl 1.9 module traversys_SafeSoftware_FME;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Safe Software FME';
+    tree_path := 'Traversys', 'Software', 'Safe Software', 'FME';
 end metadata;
 
 pattern Traversys_FME 1.0

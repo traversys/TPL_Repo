@@ -2,7 +2,7 @@ tpl 1.9 module traversys_ArcIMS;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Esri ArcIMS';
+    tree_path := 'Traversys', 'Software', 'Esri', 'ArcIMS';
 end metadata;
 
 pattern Traversys_SI_ArcIMS 1.0

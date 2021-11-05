@@ -2,7 +2,7 @@ tpl 1.6 module traversys_Integraph_Gtech;
     
 metadata
     origin := "Traversys";
-    tree_path := 'Traversys', 'Software', 'Intergraph G/Technology';
+    tree_path := 'Traversys', 'Software', 'Hexagon Safety & Infrastructure', 'Intergraph G/Technology';
 end metadata;
 
 definitions tsys_ig 1.0
