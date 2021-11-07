@@ -57,7 +57,7 @@ pattern Traversys_SI_SELECTServer 1.0
 	
 end pattern;
 
-identify Bentley 1.0
+identify BentleySelect 1.0
     tags Bentley;
     DiscoveredProcess cmd -> simple_identity;
     windows_cmd 'Bentley\.SelectServer' -> "Bentley SELECTServer";

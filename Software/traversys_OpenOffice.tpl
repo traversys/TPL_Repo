@@ -1,4 +1,4 @@
-tpl 1.6 module traversys_OpenOffice;
+tpl 1.9 module traversys_OpenOffice;
 
 metadata
     origin := "Traversys";
@@ -47,7 +47,6 @@ pattern Traversys_SI_OpenOffice 1.0
         pr_version:= "";
         version:= "";
         
-        // Get the highest package
         for pkg in package_lst do
             log.debug("Found package %pkg.name%");
             if "version" in pkg then
@@ -68,6 +67,7 @@ pattern Traversys_SI_OpenOffice 1.0
                                     product_version:= pr_version,
                                     _traversys:= true
                                     );
+        model.setRemovalGroup(si, "%type%_sis");
     
     end body;
   
