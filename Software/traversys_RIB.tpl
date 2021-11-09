@@ -49,6 +49,7 @@ pattern Traversys_SI_RIBLizenzmanagement 1.0
                                     type:= type,
                                     _traversys:= true
                                     );
+        model.setRemovalGroup(si, "%type%_sis");
 
     end body;
 

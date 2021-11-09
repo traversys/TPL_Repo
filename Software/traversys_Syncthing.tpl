@@ -1,4 +1,4 @@
-tpl 1.9 module traversys_Syncthing;
+tpl 1.19 module traversys_Syncthing;
     
 metadata
     origin := "Traversys";
@@ -29,7 +29,8 @@ pattern Traversys_SI_Syncthing 1.0
     end constants;
     
     triggers
-        on p := DiscoveredProcess where cmd matches unix_cmd "syncthing";
+        on p := DiscoveredProcess where cmd matches unix_cmd "syncthing"
+                                        or cmd matches windows_cmd "syncthing";
     end triggers;
     
     body
@@ -42,19 +43,55 @@ pattern Traversys_SI_Syncthing 1.0
         r  := void;
         id := void;
         rl := void;
+        rd := void;
         llp:= void;
         a  := [];
         lp := [];
         dl := [];
+
+        br := "/"; // Linux
+        if h.os_type = "Windows" then
+            br := "\\";
+        end if;
+
+        version:= datatype(v);
+        log.debug("version: %version%");
         
         n := "%type% on %h.name%";
         k := text.hash("%type%/%h.key%");
 
+        rd:= regex.extract(p.cmd, regex "((\w:)?((\\|/).*)+(\\|/))", raw "\1");
+        if not rd then
+            rd:= regex.extract(p.args, regex "home=((\w:)?((\\|/).*)+(\\|/)?)", raw "\1");
+        end if;
+
+        if not datatype(rd) = "void" then
+            list.append(a, "root_dir");
+            // Get config
+            xf:= discovery.fileGet(h, rd + br + "config.xml");
+            if xf and xf.content then
+                // TODO: something with this XML
+                x:= xf.content;
+            else
+                xf:= discovery.fileGet(h, rd + br + "var" + br + "config.xml");
+                if xf and xf.content then
+                    x:= xf.content;
+                    cf:= discovery.fileGet(h, rd + br + "app" + br + "config");
+                    if cf and cf.content then
+                        // TODO: something with this JSON
+                        c:= cf.content;
+                    end if;
+                end if;
+            end if;
+        end if;
+
         packages := model.findPackages(h, [ regex '(?i)syncthing' ]);
         for pkg in packages do
+            log.debug("Packages found.");
             if "version" in pkg then
                 if pkg.version > v then
                     v := pkg.version;
+                    log.debug("Packages version: %v%");
                     pv:= regex.extract(v, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= v);
                     n := '%type% %pv% on %h.name%';
                     if pkg.revision then
@@ -69,30 +106,44 @@ pattern Traversys_SI_Syncthing 1.0
             end if;
         end for;
 
+        gui:= regex.extract(p.args, regex 'gui-address="\w+:(\d+)"', raw "\1");
+        if gui then
+            llp:= gui;
+            list.append(a, "local_port");
+        end if;
+
         // Listening Ports
         lps:= search(in p processwith communicationForProcesses(2));
         for l in lps do
             list.append(lp, l.local_port);
             list.append(a, "listening_ports");
             if l.local_ip_addr = "127.0.0.1" then
-                // Some API stuff to happen here....
-                llp:= l.local_port;
-                list.append(a, "local_port");
+                if not llp then
+                    // TODO: Some API stuff to happen here....
+                    llp:= l.local_port;
+                    list.append(a, "local_port");
+                end if;
             end if;
         end for;
 
         // Get Device ID
-        di := discovery.runCommand(h, "syncthing -device-id");
+        di := discovery.runCommand(h, p.cmd + " -device-id");
+        //if h.os_type = "Windows" then
+        //    di := discovery.runCommand(h, rd + "syncthing -device-id");
+        //else
+        //    di := discovery.runCommand(h, "syncthing -device-id");
+        //end if;
         if di and di.result then
+            log.debug("Device ID: %di.result%");
             id:= text.strip(di.result);
             list.append(a, "device_id");
         end if;
 
         // Get Detailed Version Info
-        ver := discovery.runCommand(h, "syncthing -version");
+        ver := discovery.runCommand(h, p.cmd + " -version");
         if ver and ver.result then
-            if not v then
-                v := regex.extract(ver.result, regex "v(\d+(?:\.\d+)+(-\w+\d+))", raw "\1");
+            if datatype(v) = "void" then
+                v := regex.extract(ver.result, regex "v(\d+(?:\.\d+)+(-\w+\d+)?)", raw "\1");
                 pv:= regex.extract(v, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= v);
                 n := '%type% %pv% on %h.name%';
             end if;
@@ -112,6 +163,7 @@ pattern Traversys_SI_Syncthing 1.0
                                     listening_ports := lp,
                                     local_port      := llp,
                                     device_id       := id,
+                                    root_dir        := rd,
                                     _traversys      := true
                                     );
         model.setRemovalGroup(si, "%type%_sis");
@@ -135,13 +187,120 @@ pattern Traversys_SI_Syncthing 1.0
         else
             si.sync_clients:= void;
         end if;
+
+        // Associated Processes
+        ps:= discovery.allProcesses(p);
+        rps:= search(in ps where cmd matches windows_cmd "SyncTrayzor");
+        inference.associate(si, rps);
         
     end body;
 
 end pattern;
 
+
+pattern Traversys_SI_SyncTrayzor 1.0
+    """
+    Models an instance of SyncTrayzor.
+    
+    Change History:
+    2021-11-09 | 1.0 | WF | Created.
+    
+    """
+    metadata
+        publishers := 'canton7';
+        products   := 'SyncTrayzor';
+        urls       := 'https://github.com/canton7/SyncTrayzor';
+        categories := 'Continuous File Synchronisation';
+    end metadata;
+
+    overview
+        tags traversys, custom, syncthing, synctrayzor;
+    end overview;
+    
+    constants
+        type := "SyncTrayzor";
+    end constants;
+    
+    triggers
+        on p := DiscoveredProcess where cmd matches windows_cmd "SyncTrayzor";
+    end triggers;
+    
+    body
+
+        h  := related.host(p);
+        n  := "%type% on %h.name%";
+        k  := text.hash("%type%/%h.key%");
+        r  := void;
+        v  := void;
+        pv := void;
+        d  := void;
+        rd := void;
+        a  := [];
+
+        br := "/"; // Linux
+        if h.os_type = "Windows" then
+            br := "\\";
+        end if;
+
+        packages := model.findPackages(h, [ regex "(?i)SyncTrayzor" ]);
+        for pkg in packages do
+            if "version" in pkg then
+                if pkg.version > v then
+                    v := pkg.version;
+                    pv:= regex.extract(v, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= v);
+                    n := '%type% %pv% on %h.name%';
+                    if pkg.revision then
+                        r := pkg.revision;
+                        list.append(a, "revision");
+                    end if;
+                    if "description" in pkg then
+                        d:= pkg.description;
+                        list.append(a, "description");
+                    end if;
+                end if;
+            end if;
+        end for;
+
+        rd:= regex.extract(p.cmd, regex "((\w:)?((\\|/).*)+(\\|/))", raw "\1");
+        if not datatype(rd) = "void" then
+            xf:= discovery.fileGet(h, rd + br + "SyncTrayzor.exe.config");
+            if xf and xf.content then
+                x:= xf.content;
+                //TODO: Do some XML stuff
+            end if;
+        end if;
+
+        si := model.SoftwareInstance(
+                                    key             := k,
+                                    type            := type,
+                                    name            := n,
+                                    version         := v,
+                                    product_version := pv,
+                                    revision        := r,
+                                    description     := d,
+                                    _traversys      := true
+                                    );
+        model.setRemovalGroup(si, "%type%_sis");
+        model.addDisplayAttribute(si, a);
+
+        // Relate to Syncthing
+        stp:= discovery.descendents(p);
+        sts:= search(in stp traverse Primary:Inference:InferredElement:SoftwareInstance);
+        for st in sts do
+            log.debug("Adding management relationship for %st.name%...");
+            model.rel.Management(Manager:= si, ManagedElement:= st);
+        end for;
+        inference.associate(si, stp);
+        
+    end body;
+
+end pattern;
+
+
 identify Syncthing 1.0
     tags Syncthing;
     DiscoveredProcess cmd -> set_by, simple_identity;
     unix_cmd 'syncthing' -> 'traversys', 'Syncthing';
+    windows_cmd 'syncthing' -> 'traversys', 'Syncthing';
+    windows_cmd 'SyncTrayzor' -> 'traversys', 'SyncTrayzor';
 end identify;
