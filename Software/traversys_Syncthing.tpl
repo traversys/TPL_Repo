@@ -36,6 +36,7 @@ pattern Traversys_SI_Syncthing 1.0
     body
 
         h  := related.host(p);
+        da := discovery.access();
         v  := void;
         pv := void;
         d  := void;
@@ -45,9 +46,11 @@ pattern Traversys_SI_Syncthing 1.0
         rl := void;
         rd := void;
         llp:= void;
+        cf := void;
         a  := [];
         lp := [];
         dl := [];
+        x  := none;
 
         br := "/"; // Linux
         if h.os_type = "Windows" then
@@ -60,29 +63,75 @@ pattern Traversys_SI_Syncthing 1.0
         n := "%type% on %h.name%";
         k := text.hash("%type%/%h.key%");
 
+        gui:= regex.extract(p.args, regex 'gui-address="\w+:(\d+)"', raw "\1");
+        if gui then
+            llp:= gui;
+            list.append(a, "local_port");
+        end if;
+
         rd:= regex.extract(p.cmd, regex "((\w:)?((\\|/).*)+(\\|/))", raw "\1");
+        home:= regex.extract(p.args, regex "home=((\w:)?((\\|/).*)+(\\|/)?)", raw "\1");
         if not rd then
-            rd:= regex.extract(p.args, regex "home=((\w:)?((\\|/).*)+(\\|/)?)", raw "\1");
+            rd:= home;
         end if;
 
         if not datatype(rd) = "void" then
             list.append(a, "root_dir");
             // Get config
-            xf:= discovery.fileGet(h, rd + br + "config.xml");
-            if xf and xf.content then
-                // TODO: something with this XML
-                x:= xf.content;
-            else
-                xf:= discovery.fileGet(h, rd + br + "var" + br + "config.xml");
-                if xf and xf.content then
-                    x:= xf.content;
-                    cf:= discovery.fileGet(h, rd + br + "app" + br + "config");
-                    if cf and cf.content then
-                        // TODO: something with this JSON
-                        c:= cf.content;
+            sp:= discovery.runCommand(h, p.cmd + " --paths");
+            if sp and sp.result then
+                cf:= regex.extract(sp.result, regex "((\w:)?((\\|/).*)+(\\|/)config.xml)", raw "\1");
+                if cf then
+                    list.append(a, "config_file");
+                    xf:= discovery.fileGet(h, cf);
+                    if xf and xf.content then
+                        x:= xf.content;
+                    else
+                        xf:= discovery.fileGet(h, rd + "config.xml");
+                        if xf and xf.content then
+                            // TODO: something with this XML
+                            x:= xf.content;
+                        else
+                            xf:= discovery.fileGet(h, home + br + "config.xml");
+                            if xf and xf.content then
+                                // TODO: something with this XML
+                                x:= xf.content;
+                            end if;
+                        end if;
                     end if;
                 end if;
             end if;
+        end if;
+
+        if x then
+            xd:=xpath.openDocument(x);
+            if not gui then
+                add:= xpath.evaluate(xd,'/configuration/gui/address/text()');
+                gui:= regex.extract(add[0], regex '\w+:(\d+)', raw "\1");
+                if gui then
+                    llp:= gui;
+                    list.append(a, "local_port");
+                    api:= xpath.evaluate(xd,'/configuration/gui/apikey/text()');
+                    if api then
+                        tok:= api[0];
+                        headers:= table();
+                        headers['X-API-Key']:= tok;
+                        res:= discovery.restfulGet(da, '', '/rest/config', headers, port:=llp);
+                        if res and res.response_status = "200" then
+                            // API Stuff
+                            bod:= res.response_body;
+                            log.debug("Response: %res.response_status%");
+                            log.debug("Body: %res.response_body%");
+                        else // Try to run locally
+                            res:= discovery.runCommand(da, 'curl -k -X GET -H "X-API-Key: %tok%" https://127.0.0.1:%llp%/rest/config');
+                            if res and res.result then
+                                bod:= res.result;
+                            end if;
+                        end if;
+                    end if;
+                end if;
+            end if;
+            xpath.closeDocument(xd);
         end if;
 
         packages := model.findPackages(h, [ regex '(?i)syncthing' ]);
@@ -106,12 +155,6 @@ pattern Traversys_SI_Syncthing 1.0
             end if;
         end for;
 
-        gui:= regex.extract(p.args, regex 'gui-address="\w+:(\d+)"', raw "\1");
-        if gui then
-            llp:= gui;
-            list.append(a, "local_port");
-        end if;
-
         // Listening Ports
         lps:= search(in p processwith communicationForProcesses(2));
         for l in lps do
@@ -127,7 +170,7 @@ pattern Traversys_SI_Syncthing 1.0
         end for;
 
         // Get Device ID
-        di := discovery.runCommand(h, p.cmd + " -device-id");
+        di := discovery.runCommand(h, p.cmd + " --device-id");
         //if h.os_type = "Windows" then
         //    di := discovery.runCommand(h, rd + "syncthing -device-id");
         //else
@@ -140,7 +183,7 @@ pattern Traversys_SI_Syncthing 1.0
         end if;
 
         // Get Detailed Version Info
-        ver := discovery.runCommand(h, p.cmd + " -version");
+        ver := discovery.runCommand(h, p.cmd + " --version");
         if ver and ver.result then
             if datatype(v) = "void" then
                 v := regex.extract(ver.result, regex "v(\d+(?:\.\d+)+(-\w+\d+)?)", raw "\1");
@@ -164,6 +207,7 @@ pattern Traversys_SI_Syncthing 1.0
                                     local_port      := llp,
                                     device_id       := id,
                                     root_dir        := rd,
+                                    config_file     := cf,
                                     _traversys      := true
                                     );
         model.setRemovalGroup(si, "%type%_sis");
