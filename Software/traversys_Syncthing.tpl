@@ -67,6 +67,7 @@ pattern Traversys_SI_Syncthing 1.0
         if gui then
             llp:= gui;
             list.append(a, "local_port");
+            log.debug("Local port set to: %gui%");
         end if;
 
         rd:= regex.extract(p.cmd, regex "((\w:)?((\\|/).*)+(\\|/))", raw "\1");
@@ -78,24 +79,58 @@ pattern Traversys_SI_Syncthing 1.0
         if not datatype(rd) = "void" then
             list.append(a, "root_dir");
             // Get config
+            // Syncthing can have many config files all over the system
+            // but only one specifically will API Key details
             sp:= discovery.runCommand(h, p.cmd + " --paths");
             if sp and sp.result then
                 cf:= regex.extract(sp.result, regex "((\w:)?((\\|/).*)+(\\|/)config.xml)", raw "\1");
-                if cf then
-                    list.append(a, "config_file");
+                log.debug("Potential config file (paths): %cf%");
+                if cf then // Most trustworthy path
                     xf:= discovery.fileGet(h, cf);
                     if xf and xf.content then
                         x:= xf.content;
-                    else
-                        xf:= discovery.fileGet(h, rd + "config.xml");
+                        list.append(a, "config_file");
+                        log.debug("Found config file (paths): %cf%");
+                    else // Switch out user - in case this doesn't match Discovery login
+                        // Syncthing paths command will output a path configured to the current
+                        // user regardless of actual existence
+                        oldpath := "C:\\Users\\Admin\\AppData\\Local\\Syncthing\\config.xml";
+                        log.debug("oldpath = %oldpath%");
+                        newuser := "\\\\Users\\\\NEWUSER\\\\";
+                        log.debug("newuser = %newuser%");
+                        newpath := regex.replace("\\Users\\\S+?\\",newuser,oldpath);
+                        log.debug("newpath = %newpath%");
+                        //usr:= regex.extract(p.cmd, regex "\\Users\\(\S+?)\\", raw "\1");
+                        //cur := regex.extract(cf, regex "\\Users\\(\S+?)\\", raw "\1");
+                        //log.debug("User extracted: %usr%");
+                        //usrp:= "\\" + usr + "\\";
+                        //curp:= "\\" + cur + "\\";
+                        //log.debug("Substring: %usrp%");
+                        //cf:= regex.replace(cf, curp, usrp);
+                        //log.debug("Potential config file (user): %cf%");
+                        //xf:= discovery.fileGet(h, cf);
+                        xf:= none;
                         if xf and xf.content then
-                            // TODO: something with this XML
                             x:= xf.content;
-                        else
-                            xf:= discovery.fileGet(h, home + br + "config.xml");
+                            list.append(a, "config_file");
+                            log.debug("Found config file (user): %cf%");
+                        else // Use -home flag
+                            log.debug("Potential config file (home): %cf%");
+                            cf:= home + br + "config.xml";
+                            xf:= discovery.fileGet(h, cf);
                             if xf and xf.content then
-                                // TODO: something with this XML
                                 x:= xf.content;
+                                list.append(a, "config_file");
+                                log.debug("Found config file (home): %cf%");
+                            else // Look in the root directory
+                                cf:= rd + "config.xml";
+                                log.debug("Potential config file (root): %cf%");
+                                xf:= discovery.fileGet(h, cf);
+                                if xf and xf.content then
+                                    x:= xf.content;
+                                    list.append(a, "config_file");
+                                    log.debug("Found config file (root): %cf%");
+                                end if;
                             end if;
                         end if;
                     end if;
@@ -107,26 +142,29 @@ pattern Traversys_SI_Syncthing 1.0
             xd:=xpath.openDocument(x);
             if not gui then
                 add:= xpath.evaluate(xd,'/configuration/gui/address/text()');
-                gui:= regex.extract(add[0], regex '\w+:(\d+)', raw "\1");
-                if gui then
-                    llp:= gui;
-                    list.append(a, "local_port");
-                    api:= xpath.evaluate(xd,'/configuration/gui/apikey/text()');
-                    if api then
-                        tok:= api[0];
-                        headers:= table();
-                        headers['X-API-Key']:= tok;
-                        res:= discovery.restfulGet(da, '', '/rest/config', headers, port:=llp);
-                        if res and res.response_status = "200" then
-                            // API Stuff
-                            bod:= res.response_body;
-                            log.debug("Response: %res.response_status%");
-                            log.debug("Body: %res.response_body%");
-                        else // Try to run locally
-                            res:= discovery.runCommand(da, 'curl -k -X GET -H "X-API-Key: %tok%" https://127.0.0.1:%llp%/rest/config');
-                            if res and res.result then
-                                bod:= res.result;
-                            end if;
+                if size(add) > 0 then
+                    gui:= regex.extract(add[0], regex '\w+:(\d+)', raw "\1");
+                    log.debug("Found address: %add%");
+                end if;
+            end if;
+            if gui then
+                llp:= gui;
+                list.append(a, "local_port");
+                log.debug("Local port set to: %gui%");
+                api:= xpath.evaluate(xd,'/configuration/gui/apikey/text()');
+                if size(api) > 0 then
+                    tok:= api[0];
+                    headers:= table();
+                    headers['X-API-Key']:= tok;
+                    res:= discovery.restfulGet(da, '', '/rest/config', headers, port:=llp);
+                    if res and res.response_status = "200" then
+                        // API Stuff
+                        bod:= res.response_body;
+                        log.debug("Response: %res.response_status%");
+                    else // Try to run locally
+                        res:= discovery.runCommand(da, 'curl -k -X GET -H "X-API-Key: %tok%" https://127.0.0.1:%llp%/rest/config');
+                        if res and res.result then
+                            bod:= res.result;
                         end if;
                     end if;
                 end if;
@@ -307,7 +345,7 @@ pattern Traversys_SI_SyncTrayzor 1.0
 
         rd:= regex.extract(p.cmd, regex "((\w:)?((\\|/).*)+(\\|/))", raw "\1");
         if not datatype(rd) = "void" then
-            xf:= discovery.fileGet(h, rd + br + "SyncTrayzor.exe.config");
+            xf:= discovery.fileGet(h, rd + "SyncTrayzor.exe.config");
             if xf and xf.content then
                 x:= xf.content;
                 //TODO: Do some XML stuff
