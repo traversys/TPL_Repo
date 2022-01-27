@@ -35,7 +35,7 @@ definitions lookup 1.0
         if file and file.md5sum then
             log.info("File %file.path% captured!");
         else
-            log.warn("File %file.path% not found.");
+            log.warn("File %path% not found.");
         end if;
     end define;
 
@@ -45,7 +45,7 @@ definitions lookup 1.0
         if dir and dir.method_success then
             log.info("Directory %dir.path% listed!");
         else
-            log.warn("Directory %dir.path% not found.");
+            log.warn("Directory %path% not found.");
         end if;
     end define;
 
