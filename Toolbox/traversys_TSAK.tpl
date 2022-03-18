@@ -218,7 +218,7 @@ pattern TSAK_Host 1.4
             if h.os_type matches "Linux" then
                 tz:= discovery.runCommand(h, "cat /etc/timezone");
                 if tz and tz.result then
-                    h.timezone:= tzCmd.result;
+                    h.timezone:= tz.result;
                 else
                     tz:= discovery.runCommand(h, "timedatectl | grep 'Time zone'");
                     if tz and tz.result then
@@ -236,9 +236,9 @@ pattern TSAK_Host 1.4
                     h.timezone:= regex.extract(tz.result, regex "timezone\=(\S+)", raw "\1");
                 end if;
             elif h.os_type = "Windows" then
-                tz:= discovery.runCommand(h, "tzutil /g", raw! "\1");
+                tz:= discovery.runCommand(h, "tzutil /g");
                 if tz and tz.result then
-                    h.timezone:= tzCmd.result;
+                    h.timezone:= tz.result;
                 end if;
 
             end if;
