@@ -25,10 +25,20 @@ pattern updatePsuedoVault 1.0
     """
     Author: Wes Moskal-Fitzpatrick
 
-    Set a value in the configuration block and it will be removed on save.
+    The configuration block acts as a psuedo-vault for one password.
+
+    Setting the username and/or password value will trigger the logic below to:
+    1) Evaluate current and default password state - if they are the same(default), do nothing
+    2) If the current password is set - set the "_p" variable
+    3) If the _p variable is set, the current password can be wiped
+    4) If the username has been reset to default, then set current password to default
+
+    TODO:
+    - Research method to encrypt or add further obscurity.
+    - Multiple credential storage
 
     Change History:
-    2019-06-18 1.0 WMF : Created.
+    2022-03-19 1.0 WMF : Created.
 
     Query:
     search PatternConfiguration where name = "PsuedoVault.psuedoVault" and __active = 1
@@ -42,7 +52,8 @@ pattern updatePsuedoVault 1.0
     username_current,
     username_default,
     password_current,
-    password_default
+    password_default,
+    password
 
     """
 
@@ -60,18 +71,35 @@ pattern updatePsuedoVault 1.0
             stop;
         end if;
 
-        log.debug("psuedoVault Username = %psuedoVault.username%");
         log.debug("psuedoVault Password = %psuedoVault.password%");
-        log.debug("PatternConfig Username = %config.username_current%");
-        log.debug("PatternConfig Password = %config.password_current%");
+        log.debug("PatternConfig Current Password = %config.password_current%");
+        log.debug("PatternConfig Password = %config.password%");
 
-        // Remove Config Values
-        config.password_current:= none;
+        if config.password_current = config.password_default then
+            // Password is set to default
+            // Reset password variable and do nothing.
+            config._p := config.password_default;
+            stop;
+        end if;
 
-        log.debug("psuedoVault Username = %psuedoVault.username%");
-        log.debug("psuedoVault Password = %psuedoVault.password%");
-        log.debug("PatternConfig Username = %config.username_current%");
-        log.debug("PatternConfig Password = %config.password_current%");
+        if config.password_current then
+            // Password set
+            if config._p = config.password_current then
+                // The current password is visible - remove from UI
+                config.password_current := none;
+                stop;
+            else // Stored password differs
+                config._p := config.password_current;
+            end if;
+
+            // Final check
+            if config._p then // config.password has been set
+                config.password_current := none;
+            end if;
+        elif config.username_current = config.username_default then
+            // Login has been reset
+            config._p := config.password_default;
+        end if;
 
     end body;
 
