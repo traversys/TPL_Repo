@@ -34,7 +34,7 @@ pattern updatePsuedoVault 1.0
     4) If the username has been reset to default, then set current password to default
 
     TODO:
-    - Research method to encrypt or add further obscurity.
+    - Research method to encrypt or add further obscurity - SSH/API data source?
     - Multiple credential storage
 
     Change History:
@@ -53,7 +53,7 @@ pattern updatePsuedoVault 1.0
     username_default,
     password_current,
     password_default,
-    password
+    _p as 'Stored Password'
 
     """
 
