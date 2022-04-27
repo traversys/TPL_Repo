@@ -114,6 +114,9 @@ pattern traversys_discoData 1.0
             if highest then
                 disco.baseline_highest:= highest;
                 model.addDisplayAttribute(disco, "baseline_highest");
+            else
+                disco.baseline_highest:= void;
+                model.removeDisplayAttribute(disco, "baseline_highest");
             end if;
             not_ok:= regex.extractAll(baseline.result, "(.*: (CRITICAL|MAJOR|MINOR|INFO).*)");
             if size(not_ok) > 0 then
@@ -124,35 +127,57 @@ pattern traversys_discoData 1.0
                 disco.baseline_warnings:= not_ok_results;
                 print.data_type(false,"Results",not_ok_results);
                 model.addDisplayAttribute(disco, "baseline_warnings");
+            else
+                disco.baseline_warnings:= void;
+                model.removeDisplayAttribute(disco, "baseline_warnings");
             end if;
+        else
+            disco.baseline_warnings:= void;
+            model.removeDisplayAttribute(disco, "baseline_warnings");
+            disco.baseline_highest:= void;
+            model.removeDisplayAttribute(disco, "baseline_highest");
         end if;
 
         // TKU Level - Local Only
         appliance_name:= system.getOption("APPLIANCE_NAME");
-        print.attribute(false,"Appliance Name",appliance_name);
-        tku_levels['TKU']:= "Not Found!";
-        tku_levels['EDP']:= "Not Found!";
-        tku_levels['Storage']:= "Not Found!";
-        if disco.appliance_name = appliance_name then
-            tkus:= search(KnowledgeUpload where origin = "TKU" and modified = 0);
-            if size(tkus) > 0 then
-                for tku in tkus do
-                    if tku.package = "Technology Knowledge Update" then
-                        tku_levels['TKU']:= tku.name;
-                    end if;
-                    if tku.package = "Extended Data Pack" then
-                        tku_levels['EDP']:= tku.name;
-                    end if;
-                    if tku.package = "Technology Knowledge Update - Storage" then
-                        tku_levels['Storage']:= tku.name;
-                    end if;
-                    if tku.package = "Technology Knowledge Update - ServiceNowSync" then
-                        tku_levels['ServiceNow']:= tku.name;
-                    end if;
-                end for;
-                disco.TKU_levels:= tku_levels;
-                model.addDisplayAttribute(disco, "TKU_levels");
+        hostname:= discovery.runCommand(host, "hostname");
+        hostn:= regex.extract(hostname.result, "(\S+)", raw "\1");
+        print.attribute(true,"Hostname",hostn);
+        if host.hostname = hostn then
+            print.attribute(true,"Appliance Name",appliance_name);
+            if disco.appliance_name = appliance_name then
+                tkus:= search(KnowledgeUpload where origin = "TKU" and modified = 0);
+                if size(tkus) > 0 then
+                    tku_levels['TKU']:= "Not Found!";
+                    tku_levels['EDP']:= "Not Found!";
+                    tku_levels['Storage']:= "Not Found!";
+                    for tku in tkus do
+                        if tku.package = "Technology Knowledge Update" then
+                            tku_levels['TKU']:= tku.name;
+                        end if;
+                        if tku.package = "Extended Data Pack" then
+                            tku_levels['EDP']:= tku.name;
+                        end if;
+                        if tku.package = "Technology Knowledge Update - Storage" then
+                            tku_levels['Storage']:= tku.name;
+                        end if;
+                        if tku.package = "Technology Knowledge Update - ServiceNowSync" then
+                            tku_levels['ServiceNow']:= tku.name;
+                        end if;
+                    end for;
+                    disco.TKU_levels:= tku_levels;
+                    model.addDisplayAttribute(disco, "TKU_levels");
+                else
+                    disco.TKU_levels:= void;
+                    model.removeDisplayAttribute(disco, "TKU_levels");
+                end if;
+            else
+                disco.TKU_levels:= void;
+                model.removeDisplayAttribute(disco, "TKU_levels");
             end if;
+        else
+            disco.TKU_levels:= void;
+            model.removeDisplayAttribute(disco, "TKU_levels");
         end if;
 
         // CMDB Sync
