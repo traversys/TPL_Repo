@@ -76,6 +76,44 @@ definitions print 1.0
 
 end definitions;
 
+definitions node 1.0
+    """
+        Enhanced node functions.
+
+        Author: Wes Moskal-Fitzpatrick
+
+        Change History:
+        2022-04-28 | 1.0 | WMF | Created
+
+    """
+
+    define addAttribute(node, attribute, value, display := false)
+        """
+            Add an attribute to a node and set display options.
+        """
+        if value then
+            node[attribute]:= value;
+            if display then
+                model.addDisplayAttribute(node, attribute);
+            end if;
+        else
+            node[attribute]:= void;
+            model.removeDisplayAttribute(node, attribute);
+        end if;
+    end define;
+
+    define removeAttributes(node, attributes)
+        """
+            Remove attributes.
+        """
+        for attribute in attributes do
+            node[attribute]:= void;
+            model.removeDisplayAttribute(node, attribute);
+        end for;
+    end define;
+
+end definitions;
+
 pattern traversys_discoData 1.0
 
     '''
@@ -106,36 +144,23 @@ pattern traversys_discoData 1.0
         host            := related.host(disco);
         not_ok_results  := table();
         tku_levels      := table();
+        cmdb_connections:= table();
 
         // Baseline
         baseline:= discovery.runCommand(host, "%tw_path%/tw_baseline --no-highlight");
         if baseline and baseline.result then
             highest:= regex.extract(baseline.result,"Highest severity failure was (.*)",raw "\1",no_match:= none);
-            if highest then
-                disco.baseline_highest:= highest;
-                model.addDisplayAttribute(disco, "baseline_highest");
-            else
-                disco.baseline_highest:= void;
-                model.removeDisplayAttribute(disco, "baseline_highest");
-            end if;
+            node.addAttribute(disco, "baseline_highest", highest, true);
             not_ok:= regex.extractAll(baseline.result, "(.*: (CRITICAL|MAJOR|MINOR|INFO).*)");
             if size(not_ok) > 0 then
                 for result in not_ok do
                     not_ok_results[result[0]]:= result[1];
                 end for;
-                //disco.baseline_warnings:= json.encode(not_ok_results);
-                disco.baseline_warnings:= not_ok_results;
                 print.data_type(false,"Results",not_ok_results);
-                model.addDisplayAttribute(disco, "baseline_warnings");
-            else
-                disco.baseline_warnings:= void;
-                model.removeDisplayAttribute(disco, "baseline_warnings");
+                node.addAttribute(disco, "baseline_warnings", not_ok_results, true);
             end if;
         else
-            disco.baseline_warnings:= void;
-            model.removeDisplayAttribute(disco, "baseline_warnings");
-            disco.baseline_highest:= void;
-            model.removeDisplayAttribute(disco, "baseline_highest");
+            node.removeAttributes(disco, [ "baseline_highest", "baseline_warnings" ]);
         end if;
 
         // TKU Level - Local Only
@@ -165,38 +190,111 @@ pattern traversys_discoData 1.0
                             tku_levels['ServiceNow']:= tku.name;
                         end if;
                     end for;
-                    disco.TKU_levels:= tku_levels;
-                    model.addDisplayAttribute(disco, "TKU_levels");
-                else
-                    disco.TKU_levels:= void;
-                    model.removeDisplayAttribute(disco, "TKU_levels");
+                    node.addAttribute(disco, "TKU_levels", tku_levels, true);
                 end if;
             else
-                disco.TKU_levels:= void;
-                model.removeDisplayAttribute(disco, "TKU_levels");
+                node.removeAttributes(disco, [ "TKU_levels" ]);
             end if;
         else
-            disco.TKU_levels:= void;
-            model.removeDisplayAttribute(disco, "TKU_levels");
+            node.removeAttributes(disco, [ "TKU_levels" ]);
+            // -- API
+
         end if;
 
-        // CMDB Sync
+        // Config Dump
+        config_dump:= discovery.runCommand(host, "%tw_path%/tw_config_dump");
+
+        if config_dump and config_dump.result then
+            config_xml:= xpath.openDocument(regex.extract(config_dump.result, regex '(?is)(<\?xml.*</config>)', raw '\1'));
+
+            // CMDB Sync
+            syncs := xpath.evaluate(config_xml, '/config/cmdbsync/cmdb/name');
+            if syncs then
+                for name in syncs do
+                    cmdbs := xpath.evaluate(config_xml, '/config/cmdbsync/cmdb[name="%name%"]/host/text()');
+                    ports := xpath.evaluate(config_xml, '/config/cmdbsync/cmdb[name="%name%"]/port/text()');
+                    if cmdbs then
+                        cmdb:= cmdbs[0];
+                        port:= ports[0];
+                        connection:= "%cmdb%:%port%";
+                    else
+                        port:= ports[0];
+                        connection:= "%name%:%port%";
+                    end if;
+                    cmdb_connections[name]:= connection;
+                end for;
+                node.addAttribute(disco, "CMDB_connections", cmdb_connections, true);
+            else
+                node.removeAttributes(disco, [ "CMDB_connections" ]);
+            end if;
+        else
+            node.removeAttributes(disco, [ "CMDB_connections" ]);
+        end if;
 
         // Vault Status
+        // -- API
 
         // Licensing
+        // -- API
 
         // NTP Status
+        ntp_stat:= discovery.runCommand(host, 'command -v timedatectl &> /dev/null && timedatectl status | grep "NTP" || ntpstat');
+        timezone:= discovery.runCommand(host, 'command -v timedatectl &> /dev/null && timedatectl status | grep "Time zone" || cat /etc/sysconfig/clock && date +%Z');
+        if ntp_stat and ntp_stat.result then
+            ntp_enabled:= regex.extract(ntp_stat.result,"NTP enabled: (\w+)",raw "\1",no_match:= none);
+            ntp_synced:= regex.extract(ntp_stat.result,"NTP synchronized: (\w+)",raw "\1",no_match:= none);
+            node.addAttribute(disco, "NTP_enabled", ntp_enabled, true);
+            node.addAttribute(disco, "NTP_synchronised", ntp_synced, true);
+        else
+            node.removeAttributes(disco, [ "NTP_enabled", "NTP_synchronised" ]);
+        end if;
+        if timezone and timezone.result then
+            time_zone:= regex.extract(timezone.result,"Time zone: (.*)",raw "\1",no_match:= none);
+            node.addAttribute(disco, "timezone", time_zone, true);
+        else
+            node.removeAttributes(disco, [ "timezone" ]);
+        end if;
 
         // Core Dumps
+        cores:= discovery.runCommand(host, 'command -v tw_check_cores &> /dev/null && tw_check_cores || ls -l /usr/tideway/cores');
+        if cores and cores.result then
+            result:= regex.extract(cores.result, regex "(\w.*)", raw "\1", no_match:= cores.result); // strip newline chars
+            node.addAttribute(disco, "core_dumps", result, true);
+        else
+            node.removeAttributes(disco, [ "core_dumps" ]);
+        end if;
 
         // LDAP config
-
-        // CLI Users
-
+        ldap:= discovery.runCommand(host, '%tw_path%/tw_secopts | grep LDAP_ENABLED');
+        if ldap and ldap.result then
+            result:= regex.extract(ldap.result, regex "(\w.*)", raw "\1", no_match:= ldap.result); // strip newline chars
+            node.addAttribute(disco, "ldap", result, true);
+        else
+            node.removeAttributes(disco, [ "ldap" ]);
+        end if;
+        
         // Syslog
+        syslog:= discovery.runCommand(host, 'command -v systemctl && systemctl is-active rsyslog');
+        if syslog and syslog.result then
+            result:= regex.extract(syslog.result, regex "systemctl\s+(\w+)", raw "\1", no_match:= syslog.result); // strip newline chars
+            node.addAttribute(disco, "syslog", result, true);
+        else
+            node.removeAttributes(disco, [ "syslog" ]);
+        end if;
 
         // Cluster Health
+        cluster:= discovery.runCommand(host, '%tw_path%/tw_cluster_control --show-members');
+        if cluster and cluster.result then
+            members:= regex.extract(cluster.result, regex "Number of Members : (\d+)", raw "\1");
+            membs:= text.toNumber(members);
+            if membs > 0 then
+                node.addAttribute(disco, "cluster_size", membs, true);
+                faults:= regex.extract(cluster.result, regex "Fault Tolerance : (.*)", raw "\1");
+                node.addAttribute(disco, "fault_tolerance", faults, true);
+            end if;
+        else
+            node.removeAttributes(disco, [ "cluster_size", "fault_tolerance" ]);
+        end if;
 
         // UI Errors
 
