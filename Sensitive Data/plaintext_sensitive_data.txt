@@ -1,0 +1,12 @@
+// To run a fake process in bash
+bash -c 'exec -a fake_news echo "/usr/data --user crypto --password mi11i0ns!" > /dev/null | sleep 10000' &
+bash -c 'exec -a fake_news echo "/usr/data/gotcha --u crypto -p mi11i0ns! --file.csv" > /dev/null | sleep 10000' &
+
+// Random data
+username crypto
+password=can_u_see_me? <- password
+password can_u_see_me? <- same password
+pass=can_u_see_me? <- same password
+
+// Lets try JSON
+{ "username":"crypto", "password":"can_u_see_me?" }
