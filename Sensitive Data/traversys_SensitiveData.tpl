@@ -8,7 +8,14 @@ end metadata;
 configuration target 1.0
     """File Input"""
 
-    "File" file := """/usr/file""";
+    "Files" files := [
+                        "README.md",
+                        "plaintext.json",
+                        "random_1.txt",
+                        "random_2.txt",
+                        "plaintext.xml"
+                    ];
+    "Path" path := """/Users/Documents/GitHub/TPL_Repo/Sensitive Data/""";
 
 end configuration;
 
@@ -30,7 +37,7 @@ pattern traversys_SensitiveData 1.0
     end overview;
     
     triggers 
-        on process := DiscoveredProcess where args matches regex "\bfake_news\b";
+        on process := DiscoveredProcess where args matches regex "\bfakedp\b";
     end triggers;
 
     body
@@ -38,7 +45,10 @@ pattern traversys_SensitiveData 1.0
         host:= related.host(process);
 
         // Get file contents
-        file:= discovery.fileGet(host, target.file);
+        for file in target.files do
+            target_file:= "%target.path%%file%";
+            discovery.fileGet(host, target_file);
+        end for;
 
     end body;
 
