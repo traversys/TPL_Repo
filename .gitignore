@@ -128,3 +128,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 Software/traversys_BB_test.tpl
+.DS_Store
