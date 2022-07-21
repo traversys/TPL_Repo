@@ -390,6 +390,166 @@ definitions traversys 1.0
 
 end definitions;
 
+definitions print 1.0
+    """
+        Enhanced logging functions.
+
+        Author: Wes Moskal-Fitzpatrick
+
+        Change History:
+        2022-04-27 | 1.0 | WMF | Created
+
+    """
+
+    define info(active, message)
+        """Enhanced info."""
+        if active then
+            log.info(message);
+        end if;
+    end define;
+    
+    define debug(active, message)
+        """Enhanced debug."""
+        if active then
+            log.debug(message);
+        end if;
+    end define;
+
+    define critical(active, message)
+        """Enhanced critical."""
+        if active then
+            log.critical(message);
+        end if;
+    end define;
+
+    define warn(active, message)
+        """Enhanced warn."""
+        if active then
+            log.warn(message);
+        end if;
+    end define;
+
+    define error(active, message)
+        """Enhanced error."""
+        if active then
+            log.error(message);
+        end if;
+    end define;
+
+    define attribute(active, message, attribute)
+        """Log an attribute in debug."""
+        if active then
+            log.debug("%message% = %attribute%");
+        end if;
+    end define;
+
+    define data_type(active, message, attribute)
+        """Log an attribute in debug."""
+        if active then
+            dt:= datatype(attribute);
+            log.debug("%message% = %dt%");
+        end if;
+    end define;
+
+    define list_size(active, message, _list_)
+        """Get size of a list."""
+        if active then
+            sz:= size(_list_);
+            log.debug("%message% = %sz%");
+        end if;
+    end define;
+
+end definitions;
+
+definitions node 1.0
+    """
+        Enhanced node functions.
+
+        Author: Wes Moskal-Fitzpatrick
+
+        Change History:
+        2022-04-28 | 1.0 | WMF | Created
+
+    """
+
+    define addAttribute(node, attribute, value, display := false)
+        """
+            Add an attribute to a node and set display options.
+        """
+        if value then
+            node[attribute]:= value;
+            if display then
+                model.addDisplayAttribute(node, attribute);
+            end if;
+        else
+            node[attribute]:= void;
+            model.removeDisplayAttribute(node, attribute);
+        end if;
+    end define;
+
+    define removeAttributes(node, attributes)
+        """
+            Remove attributes.
+        """
+        for attribute in attributes do
+            node[attribute]:= void;
+            model.removeDisplayAttribute(node, attribute);
+        end for;
+    end define;
+
+end definitions;
+
+definitions output 1.0
+    """
+        Enhanced output functions.
+
+        Author: Alex Read
+
+        Change History:
+        2022-07-11 | 1.0 | AR | Created
+
+    """
+
+	define numberToReadableFormat(value, type) -> rf
+		"""
+            Take a numeric value and convert it to a more human readable format
+        """
+		
+		readable_format := value;
+		
+		if type = 'bytes' then
+		
+			if value >= 1099511627776 then
+				readable_format := number.toText(value / 1099511627776) + 'TB';
+			elif value >= 1073741824 then
+				readable_format := number.toText(value / 1073741824) + 'GB';
+			elif value >= 1048576 then
+				readable_format := number.toText(value / 1048576) + 'MB';
+			elif value >= 1024 then
+				readable_format := number.toText(value / 1024) + 'KB';
+			else
+				readable_format := number.toText(value) + 'B';
+			end if;
+			
+		elif type = 'kilobytes' then
+		
+			if value >= 1073741824 then
+				readable_format := number.toText(value / 1073741824) + 'TB';
+			elif value >= 1048576 then
+				readable_format := number.toText(value / 1048576) + 'GB';
+			elif value >= 1024 then
+				readable_format := number.toText(value / 1024) + 'MB';
+			else
+				readable_format := number.toText(value) + 'KB';
+			end if;
+			
+		end if;	
+
+    return readable_format;
+  end define;
+
+end definitions;
+
 // The MIT License (MIT)
 
 // Copyright Wes Moskal-Fitzpatrick 2013
