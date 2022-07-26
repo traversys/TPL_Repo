@@ -12,6 +12,162 @@ configuration defaults 1.0
 
 end configuration;
 
+table url_encoding 1.0
+    ' ' -> '%20';
+    '!' -> '%21';
+    '"' -> '%22';
+    '#' -> '%23';
+    '$' -> '%24';
+    '%' -> '%25';
+    '&' -> '%26';
+    '(' -> '%28';
+    ')' -> '%29';
+    '*' -> '%2A';
+    '+' -> '%2B';
+    ',' -> '%2C';
+    '-' -> '%2D';
+    '.' -> '%2E';
+    '/' -> '%2F';
+    '0' -> '%30';
+    '1' -> '%31';
+    '2' -> '%32';
+    '3' -> '%33';
+    '4' -> '%34';
+    '5' -> '%35';
+    '6' -> '%36';
+    '7' -> '%37';
+    '8' -> '%38';
+    '9' -> '%39';
+    ':' -> '%3A';
+    ';' -> '%3B';
+    '<' -> '%3C';
+    '=' -> '%3D';
+    '>' -> '%3E';
+    '?' -> '%3F';
+    '@' -> '%40';
+    '[' -> '%5B';
+    '\\' -> '%5C';
+    ']' -> '%5D';
+    '^' -> '%5E';
+    '_' -> '%5F';
+    '`' -> '%60';
+    '{' -> '%7B';
+    '|' -> '%7C';
+    '}' -> '%7D';
+    '~' -> '%7E';
+    '€' -> '%%E2%%82%%AC';
+    'ƒ' -> '%%C6%%92';
+    '„' -> '%%E2%%80%%9E';
+    '…' -> '%%E2%%80%%A6';
+    '†' -> '%%E2%%80%%A0';
+    '‡' -> '%%E2%%80%%A1';
+    '‰' -> '%%E2%%80%%B0';
+    'Š' -> '%%C5%%A0';
+    'Œ' -> '%%C5%%92';
+    'Ž' -> '%%C5%%BD';
+    '“' -> '%%E2%%80%%9C';
+    '”' -> '%%E2%%80%%9D';
+    '•' -> '%%E2%%80%%A2';
+    '—' -> '%%E2%%80%%94';
+    '™' -> '%%E2%%84';
+    'š' -> '%%C5%%A1';
+    'œ' -> '%%C5%%93';
+    'ž' -> '%%C5%%BE';
+    'Ÿ' -> '%%C5%%B8';
+    '¡' -> '%%C2%%A1';
+    '¢' -> '%%C2%%A2';
+    '£' -> '%%C2%%A3';
+    '¤' -> '%%C2%%A4';
+    '¥' -> '%%C2%%A5';
+    '¦' -> '%%C2%%A6';
+    '§' -> '%%C2%%A7';
+    '¨' -> '%%C2%%A8';
+    '©' -> '%%C2%%A9';
+    'ª' -> '%%C2%%AA';
+    '«' -> '%%C2%%AB';
+    '¬' -> '%%C2%%AC';
+    '®' -> '%%C2%%AE';
+    '¯' -> '%%C2%%AF';
+    '°' -> '%%C2%%B0';
+    '±' -> '%%C2%%B1';
+    '²' -> '%%C2%%B2';
+    '³' -> '%%C2%%B3';
+    'µ' -> '%%C2%%B5';
+    '¶' -> '%%C2%%B6';
+    '·' -> '%%C2%%B7';
+    '¹' -> '%%C2%%B9';
+    'º' -> '%%C2%%BA';
+    '»' -> '%%C2%%BB';
+    '¼' -> '%%C2%%BC';
+    '½' -> '%%C2%%BD';
+    '¾' -> '%%C2%%BE';
+    '¿' -> '%%C2%%BF';
+    'À' -> '%%C3%%80';
+    'Á' -> '%%C3%%81';
+    'Â' -> '%%C3%%82';
+    'Ã' -> '%%C3%%83';
+    'Ä' -> '%%C3%%84';
+    'Å' -> '%%C3%%85';
+    'Æ' -> '%%C3%%86';
+    'Ç' -> '%%C3%%87';
+    'È' -> '%%C3%%88';
+    'É' -> '%%C3%%89';
+    'Ê' -> '%%C3%%8A';
+    'Ë' -> '%%C3%%8B';
+    'Ì' -> '%%C3%%8C';
+    'Í' -> '%%C3%%8D';
+    'Î' -> '%%C3%%8E';
+    'Ï' -> '%%C3%%8F';
+    'Ð' -> '%%C3%%90';
+    'Ñ' -> '%%C3%%91';
+    'Ò' -> '%%C3%%92';
+    'Ó' -> '%%C3%%93';
+    'Ô' -> '%%C3%%94';
+    'Õ' -> '%%C3%%95';
+    'Ö' -> '%%C3%%96';
+    'Ø' -> '%%C3%%98';
+    'Ù' -> '%%C3%%99';
+    'Ú' -> '%%C3%%9A';
+    'Û' -> '%%C3%%9B';
+    'Ü' -> '%%C3%%9C';
+    'Ý' -> '%%C3%%9D';
+    'Þ' -> '%%C3%%9E';
+    'ß' -> '%%C3%%9F';
+    'à' -> '%%C3%%A0';
+    'á' -> '%%C3%%A1';
+    'â' -> '%%C3%%A2';
+    'ã' -> '%%C3%%A3';
+    'ä' -> '%%C3%%A4';
+    'å' -> '%%C3%%A5';
+    'æ' -> '%%C3%%A6';
+    'ç' -> '%%C3%%A7';
+    'è' -> '%%C3%%A8';
+    'é' -> '%%C3%%A9';
+    'ê' -> '%%C3%%AA';
+    'ë' -> '%%C3%%AB';
+    'ì' -> '%%C3%%AC';
+    'í' -> '%%C3%%AD';
+    'î' -> '%%C3%%AE';
+    'ï' -> '%%C3%%AF';
+    'ð' -> '%%C3%%B0';
+    'ñ' -> '%%C3%%B1';
+    'ò' -> '%%C3%%B2';
+    'ó' -> '%%C3%%B3';
+    'ô' -> '%%C3%%B4';
+    'õ' -> '%%C3%%B5';
+    'ö' -> '%%C3%%B6';
+    '÷' -> '%%C3%%B7';
+    'ø' -> '%%C3%%B8';
+    'ù' -> '%%C3%%B9';
+    'ú' -> '%%C3%%BA';
+    'û' -> '%%C3%%BB';
+    'ü' -> '%%C3%%BC';
+    'ý' -> '%%C3%%BD';
+    'þ' -> '%%C3%%BE';
+    'ÿ' -> '%%C3%%BF';
+    default -> none;
+end table;
+
 definitions self 1.0
     """
         Framework for utilising Discovery API.
@@ -54,8 +210,50 @@ definitions self 1.0
         return result, version;
 
     end define;
+
+    define encode4url(string) -> encoded_string
+        """ Format a string with HTML encoding. """
+
+        encoded_string:= "";
+        all_chars:= regex.extractAll(string, regex ".");
+        for char in all_chars do
+            special:= url_encoding[char];
+            if special then
+                encoded_string:= encoded_string + special;
+            else
+                encoded_string:= encoded_string + char;
+            end if;
+        end for;
+
+        return encoded_string;
+
+    end define;
+
+    define parameters(params) -> param_string
+        """ Generate a URL parameter string. """
+        
+        i:= 0;
+        param_string:= "";
+        
+        for param in params do
+            k:= param;
+            v:= params[k];
+            if datatype(v) = "text" then
+                v:= encode4url(v);
+            end if;
+            if i = 0 then
+                param_string:= "?%k%=%v%";
+            else
+                param_string:= param_string + "&%k%=%v%";
+            end if;
+            i:=i+1;
+        end for;
+
+        return param_string;
+
+    end define;
     
-    define get(datasource, endpoint, headers:=none, version:=none) -> get_result
+    define get(datasource, endpoint, headers:=none, params:=none, version:=none) -> get_result
 		""" Run a GET api call. """
 
         if not version then
@@ -63,6 +261,9 @@ definitions self 1.0
         end if;
 
         path:= "/api/v%version%" + endpoint;
+        if params then
+            path:= path + params;
+        end if;
 
         if headers and datatype(headers) = "table" then
             get_result:= discovery.restfulGet(datasource, "oauth2", path, headers);
@@ -71,6 +272,98 @@ definitions self 1.0
         end if;
 		
         return get_result;
+
+    end define;
+
+    define post(datasource, endpoint, table, headers:=none, params:=none, version:=none) -> post_result
+		""" Run a POST api call. """
+
+        if not version then
+            version_result, version:= api_version(datasource);
+        end if;
+
+        path:= "/api/v%version%" + endpoint;
+        if params then
+            path:= path + params;
+        end if;
+        data := json.encode(table);
+
+        if headers and datatype(headers) = "table" then
+            post_result:= discovery.restfulPost(datasource, "oauth2", path, data, headers);
+        else
+            post_result:= discovery.restfulPost(datasource, "oauth2", path, data);
+        end if;
+		
+        return post_result;
+
+    end define;
+
+    define delete(datasource, endpoint, table:=none, headers:=none, version:=none) -> del_result
+		""" Run a DELETE api call. """
+
+        if not version then
+            version_result, version:= api_version(datasource);
+        end if;
+
+        data:= none;
+        path:= "/api/v%version%" + endpoint;
+        if table and datatype(table) = "table" then
+            data := json.encode(table);
+        end if;
+
+        if headers and datatype(headers) = "table" then
+            if data then
+                del_result:= discovery.restfulDelete(datasource, "oauth2", path, data, headers);
+            else
+                del_result:= discovery.restfulDelete(datasource, "oauth2", path, headers);
+            end if;
+        elif data then
+            del_result:= discovery.restfulDelete(datasource, "oauth2", path, data);
+        else
+            del_result:= discovery.restfulDelete(datasource, "oauth2", path);
+        end if;
+		
+        return del_result;
+
+    end define;
+
+    define patch(datasource, endpoint, table, headers:=none, version:=none) -> patch_result
+		""" Run a PATCH api call. """
+
+        if not version then
+            version_result, version:= api_version(datasource);
+        end if;
+
+        path:= "/api/v%version%" + endpoint;
+        data := json.encode(table);
+
+        if headers and datatype(headers) = "table" then
+            patch_result:= discovery.restfulPatch(datasource, "oauth2", path, headers, data);
+        else
+            patch_result:= discovery.restfulPatch(datasource, "oauth2", path, data);
+        end if;
+		
+        return patch_result;
+
+    end define;
+
+    define put(datasource, endpoint, table, headers:=none, version:=none) -> put_result
+		""" Run a PUT api call. """
+
+        if not version then
+            version_result, version:= api_version(datasource);
+        end if;
+
+        path:= "/api/v%version%" + endpoint;
+        data := json.encode(table);
+
+        if headers and datatype(headers) = "table" then
+            put_result:= discovery.restfulPatch(datasource, "oauth2", path, headers, data);
+        else
+            put_result:= discovery.restfulPatch(datasource, "oauth2", path, data);
+        end if;
+		
+        return put_result;
 
     end define;
 
@@ -120,7 +413,7 @@ definitions twvault 1.0
 
     """
 
-    define credential_types(datasource, group:=none, category:=none, type:=none) -> types
+    define credential_types(datasource, type:=none, group:=none, category:=none) -> types
 		'''Get a list of all credential types and filter by group and/or category.'''
         path:= "/vault/credential_types";
         params:= table();
@@ -130,10 +423,11 @@ definitions twvault 1.0
         if category then
             params['category'] := category;
         end if;
+        param_string:= self.parameters(params);
         if type then
             path:= "/vault/credential_types/%type%";
         end if;
-        types := self.get(datasource, path, headers:=params);
+        types := self.get(datasource, path, params:= param_string);
         return types;
     end define;
 
@@ -145,6 +439,74 @@ definitions twvault 1.0
         end if;
         types := self.get(datasource, path);
         return types;
+    end define;
+
+    define new_credential(datasource, data) -> result
+		'''Create a new credential.'''
+        path:= "/vault/credentials";
+        result := self.post(datasource, path, data);
+        return result;
+    end define;
+
+    define remove_credential(datasource, uuid) -> result
+		'''Remove a credential.'''
+        path:= "/vault/credentials/%uuid%";
+        result := self.delete(datasource, path);
+        return result;
+    end define;
+
+    define patch_credential(datasource, uuid, data) -> result
+		'''Patch a credential.'''
+        path:= "/vault/credentials/%uuid%";
+        result := self.patch(datasource, path, data);
+        return result;
+    end define;
+
+    define replace_credential(datasource, uuid, data) -> result
+		'''Replace new credential.'''
+        path:= "/vault/credentials/%uuid%";
+        result := self.patch(datasource, path, data);
+        return result;
+    end define;
+
+end definitions;
+
+
+definitions twdata 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Vault API calls.
+
+        Change History:
+        2022-07-26 | 1.0 | WMF | Created.
+
+    """
+
+    define query(datasource, string, offset:=none, format:=none, results_id:=none, limit:=none, delete:=false) -> results
+		'''Run a search query.'''
+        path:= "/data/search";
+        data:= table();
+        data['query'] := string;
+        params:= table();
+        if offset then
+            params['offset'] := offset;
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.post(datasource, path, data, params:= param_string);
+        return results;
     end define;
 
 end definitions;
@@ -172,18 +534,44 @@ pattern traversys_framework_test 1.0
 
     body
 
-        // Basic Auth
+        // Basic Oauth
         log.debug("Getting DS");
         ds:= discovery.dataSource('Disco Oauth');
 
+        //log.debug("Getting search results");
+        //results:= twdata.query(ds,"search Host", limit:=50, format:="object");
+        //self.debug(results);
+
         // Credentials
         log.debug("Running credential types query");
-        credential_types:= twvault.credential_types(ds,type:="oracle");
+        credential_types:= twvault.credential_types(ds,category:="Host Credentials");
         self.debug(credential_types);
 
-        log.debug("Running credentials query");
-        credentials:= twvault.credentials(ds,uuid:="");
-        self.debug(credentials);
+        //log.debug("Running credentials query");
+        //credentials:= twvault.credentials(ds,uuid:="");
+        //self.debug(credentials);
+
+        //log.debug("Post new credential");
+        //payload:= table();
+        // payload["enabled"]:= true;
+        // payload["username"]:= "discovery_service";
+        // payload["password"]:="password";
+        // payload["label"]:= "Generic SSH Service Account";
+        // payload["description"]:= "Service Account for SSH";
+        // payload["ip_range"]:="0.0.0.0/0,::/0";
+        // payload["types"]:= ["ssh"];
+        // new_cred:= twvault.new_credential(ds,payload);
+        // self.debug(new_cred);
+
+        //log.debug("Remove credential");
+        //remove_cred:= twvault.remove_credential(ds,"df99a13aef024289872cc0a801630e89");
+        //self.debug(remove_cred);
+
+        //log.debug("Update credential");
+        //payload:= table();
+        //payload["enabled"]:= false;
+        //update_cred:= twvault.patch_credential(ds,"df99a13aef024289872cc0a801630e89",payload);
+        //self.debug(update_cred);
 
     end body;
 
