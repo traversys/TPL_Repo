@@ -367,6 +367,18 @@ definitions self 1.0
 
     end define;
 
+    define about(datasource) -> about_info
+		""" Return API info. """
+		about_info:= self.get(datasource, "/about");
+        return about_info;
+    end define;
+
+    define swagger(datasource) -> swagger_info
+		""" Return Swagger info. """
+		swagger_info:= self.get(datasource, "/swagger.json");
+        return swagger_info;
+    end define;
+
 end definitions;
 
 definitions twadmin 1.0
@@ -402,6 +414,420 @@ definitions twadmin 1.0
 
 end definitions;
 
+definitions twdata 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Data API calls.
+
+        Change History:
+        2022-07-26 | 1.0 | WMF | Created.
+
+    """
+
+    define search_query(datasource, query, offset:=none, format:=none, results_id:=none, limit:=none, delete:=false) -> results
+		'''Run a search query.'''
+        path:= "/data/search";
+        data:= table();
+        data['query'] := query;
+        params:= table();
+        if offset then
+            params['offset'] := offset;
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.post(datasource, path, data, params:= param_string);
+        return results;
+    end define;
+
+    define search_condition(datasource, query, offset:=none, format:=none, results_id:=none, limit:=none, delete:=false) -> results
+		'''Search using a condition, retrieving tabular data as arrays.'''
+        path:= "/data/condition";
+        data:= table();
+        data['query'] := query;
+        params:= table();
+        if offset then
+            params['offset'] := offset;
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.post(datasource, path, data, params:= param_string);
+        return results;
+    end define;
+
+    define search_param_values(datasource, query) -> results
+		'''Get possible parameter values for a condition.'''
+        path:= "/data/condition/param_values";
+        data:= table();
+        data['query'] := query;
+        results := self.post(datasource, path, data);
+        return results;
+    end define;
+
+    define search_templates(datasource, template_id:=none) -> results
+		'''Get a list of all templates.'''
+        path:= "/data/condition/templates";
+        if template_id then
+            path:= "/vault/credentials/%template_id%";
+        end if;
+        results := self.get(datasource, path);
+        return results;
+    end define;
+
+    define best_candidate(datasource, query) -> results
+		'''Get a list of all templates.'''
+        path:= "/data/candidate";
+        data:= table();
+        data['query'] := query;
+        results := self.post(datasource, path, data);
+        return results;
+    end define;
+
+    define top_candidates(datasource, query) -> results
+		'''Get a list of all templates.'''
+        path:= "/data/candidates";
+        data:= table();
+        data['query'] := query;
+        results := self.post(datasource, path, data);
+        return results;
+    end define;
+
+    define search_nodes(datasource, node_id, relationships:=none, traversal:=none, flag:=none, attributes:=none, graph:= false, focus:=none, apply_rules:=none, complete:= none) -> results
+		'''Get node details with specified id.'''
+        path:= "/data/nodes/%node_id%";
+        params:= table();
+        if graph then
+            path:= "/data/nodes/%node_id%/graph";
+            if focus then
+                params['focus'] := focus;
+            end if;
+            if apply_rules then
+                params['apply_rules'] := apply_rules;
+            end if;
+            if complete then
+                params['complete'] := complete;
+            end if;
+        else
+            if relationships then
+                params['relationships'] := relationships;
+            end if;
+            if traversal then
+                params['traverse'] := traversal;
+            end if;
+            if flag then
+                params['flags'] := flag;
+            end if;
+            if attributes then
+                params['attributes'] := attributes;
+            end if;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+    define search_kinds(datasource, kind, offset:=none, format:=none, results_id:=none, limit:=none, delete:=false) -> results
+		'''Find all nodes of a specified node kind.'''
+        path:= "/data/kinds/%kind%";
+        params:= table();
+        if offset then
+            params['offset'] := offset;
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+    define partitions(datasource, new:=none) -> parts
+		'''Get names and ids of partitions or create a new partition.'''
+        path:= "/data/partitions";
+        if new then
+            parts := self.post(datasource, path, new);
+        else
+            parts := self.get(datasource, path);
+        end if;
+        return parts;
+    end define;
+
+    define upload(datasource, data) -> imported
+		'''Imports data. Returns the import UUID.'''
+        path:= "/data/import";
+        imported := self.post(datasource, path, data);
+        return imported;
+    end define;
+
+    define write(datasource, data) -> written
+		'''Perform arbitrary write operations.'''
+        path:= "/data/write";
+        written := self.post(datasource, path, data);
+        return written;
+    end define;
+
+end definitions;
+
+definitions twdiscovery 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Discovery API calls.
+
+        Change History:
+        2022-07-27 | 1.0 | WMF | Created.
+
+    """
+
+    define status(datasource) -> result
+		'''Get the current status of the discovery process.'''
+        path:= "/discovery";
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define scanning(datasource,data) -> result
+		'''Set the Discovery status.'''
+        path:= "/discovery";
+        result := self.post(datasource, path, data);
+        return result;
+    end define;
+
+    define api_metadata(datasource) -> result
+		'''Get metadata for the API providers currently supported by BMC Discovery.'''
+        path:= "/discovery/api_provider_metadata";
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define cloud_metadata(datasource) -> result
+		'''Get metadata for the cloud providers currently supported by BMC Discovery.'''
+        path:= "/discovery/cloud_metadata";
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define excludes(datasource, exclude_id:=none) -> result
+		'''Get a list of all excludes or specific.'''
+        path:= "/discovery/excludes";
+        if exclude_id then
+            path:= "/discovery/excludes/%exclude_id%";
+        end if;
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define add_exclude(datasource, data) -> exclude
+		'''Get a list of all excludes or specific.'''
+        path:= "/discovery/excludes";
+        exclude := self.post(datasource, path, data);
+        return exclude;
+    end define;
+
+    define del_exclude(datasource, exclude_id) -> exclude
+		'''Delete a specific exclude.'''
+        path:= "/discovery/excludes/%exclude_id%";
+        exclude := self.delete(datasource, path);
+        return exclude;
+    end define;
+
+    define patch_exclude(datasource, exclude_id, data) -> exclude
+		'''Update an exclude.'''
+        path:= "/discovery/excludes/%exclude_id%";
+        exclude := self.patch(datasource, path, data);
+        return exclude;
+    end define;
+
+    define runs(datasource, run_id:=none) -> result
+		'''Get details of all or specific currently processing discovery runs.'''
+        path:= "/discovery/runs";
+        if run_id then
+            path:= "/discovery/runs/%run_id%";
+        end if;
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define add_run(datasource, data) -> run
+		'''Create a new snapshot discovery run.'''
+        path:= "/discovery/runs";
+        run := self.post(datasource, path, data);
+        return run;
+    end define;
+
+    define patch_run(datasource, run_id, data) -> run
+		'''Update the state of a specific discovery run.'''
+        path:= "/discovery/excludes/%run_id%";
+        run := self.patch(datasource, path, data);
+        return run;
+    end define;
+
+    define run_results(datasource, run_id, result:=none, inferred_kind:=none, offset:=none, results_id:=none, format:=none, limit:=none, delete:=none) -> run_result
+		'''Get a summary of the results from scanning all endpoints in the run that had a specific type of result.'''
+        path:= "/discovery/runs/%run_id%/results";
+        if result then
+            path:= "/discovery/runs/%run_id%/results/%result%";
+        end if;
+        params:= table();
+        if offset then
+            params['offset'] := offset;
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return run_result;
+    end define;
+
+    define inferred_results(datasource, run_id, inferred_kind:=none, inferred_kind:=none, offset:=none, results_id:=none, format:=none, limit:=none, delete:=none) -> run_result
+		'''Get a summary of the devices inferred by a discovery run which have a specific inferred kind.'''
+        path:= "/discovery/runs/%run_id%/inferred";
+        if inferred_kind then
+            path:= "/discovery/runs/%run_id%/inferred/%inferred_kind%";
+        end if;
+        params:= table();
+        if offset then
+            params['offset'] := offset;
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return run_result;
+    end define;
+
+    define schedules(datasource, run_id:=none) -> schedule
+		'''Get a list of all scheduled runs or specific.'''
+        path:= "/discovery/runs/scheduled";
+        if run_id then
+            path:= "/discovery/runs/scheduled/%run_id%";
+        end if;
+        schedule := self.get(datasource, path);
+        return schedule;
+    end define;
+
+    define add_schedule(datasource, data) -> schedule
+		'''Add a new scheduled run.'''
+        path:= "/discovery/runs/scheduled";
+        schedule := self.post(datasource, path, data);
+        return schedule;
+    end define;
+
+    define del_schedule(datasource, run_id) -> schedule
+		'''Delete a specific scheduled discovery run.'''
+        path:= "/discovery/scheduled/%run_id%";
+        schedule := self.delete(datasource, path);
+        return schedule;
+    end define;
+
+    define patch_schedule(datasource, run_id, data) -> schedule
+		'''Update the parameters of a specific scheduled discovery run.'''
+        path:= "/discovery/excludes/%run_id%";
+        schedule := self.patch(datasource, path, data);
+        return schedule;
+    end define;
+
+end definitions;
+
+definitions twknowledge 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Vault API calls.
+
+        Change History:
+        2022-07-27 | 1.0 | WMF | Created.
+
+    """
+
+    define status(datasource) -> know_status
+		'''Get the current state of the appliance's knowledge, including TKU versions.'''
+        path:= "/knowledge";
+        know_status := self.post(datasource, path);
+        return know_status;
+    end define;
+
+    define upload_status(datasource) -> know_status
+		'''Get the current state of a knowledge upload.'''
+        path:= "/knowledge/status";
+        know_status := self.post(datasource, path);
+        return know_status;
+    end define;
+
+end definitions;
+
+definitions twevents 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Vault API calls.
+
+        Change History:
+        2022-07-27 | 1.0 | WMF | Created.
+
+    """
+
+    define events(datasource, data) -> event
+		'''Returns a unique ID if the event has been recorded, otherwise an
+            empty string is returned e.g. if the event source has been disabled.'''
+        path:= "/events";
+        event := self.post(datasource, path, data);
+        return event;
+    end define;
+
+end definitions;
+
 definitions twvault 1.0
     """
         Author: Wes Moskal-Fitzpatrick
@@ -412,6 +838,20 @@ definitions twvault 1.0
         2022-07-23 | 1.0 | WMF | Created.
 
     """
+
+    define status(datasource) -> result
+		'''Get details of the state of the vault.'''
+        path:= "/vault";
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define patch_vault(datasource, data) -> result
+		'''Get details of the state of the vault.'''
+        path:= "/vault";
+        result := self.post(datasource, path, data);
+        return result;
+    end define;
 
     define credential_types(datasource, type:=none, group:=none, category:=none) -> types
 		'''Get a list of all credential types and filter by group and/or category.'''
@@ -469,44 +909,66 @@ definitions twvault 1.0
         return result;
     end define;
 
-end definitions;
-
-
-definitions twdata 1.0
-    """
-        Author: Wes Moskal-Fitzpatrick
-
-        Vault API calls.
-
-        Change History:
-        2022-07-26 | 1.0 | WMF | Created.
-
-    """
-
-    define query(datasource, string, offset:=none, format:=none, results_id:=none, limit:=none, delete:=false) -> results
-		'''Run a search query.'''
-        path:= "/data/search";
-        data:= table();
-        data['query'] := string;
-        params:= table();
-        if offset then
-            params['offset'] := offset;
+    define realms(datasource, realm:=none) -> results
+		'''Retrieve all or specific realm.'''
+        path:= "/vault/kerberos/realms";
+        if realm then
+            path:= "/vault/kerberos/realms/%realm%";
         end if;
-        if format then
-            params['format'] := format;
-        end if;
-        if results_id then
-            params['results_id'] := results_id;
-        end if;
-        if delete then
-            params['delete'] := delete;
-        end if;
-        if limit then
-            params['limit'] := limit;
-        end if;
-        param_string:= self.parameters(params);
-        results := self.post(datasource, path, data, params:= param_string);
+        results := self.get(datasource, path);
         return results;
+    end define;
+
+    define remove_realm(datasource, realm) -> result
+		'''Delete a realm.'''
+        path:= "/vault/kerberos/realms/%realm%";
+        result := self.delete(datasource, path);
+        return result;
+    end define;
+
+    define new_realm(datasource, name, data, test:=none) -> result
+		'''Create a realm and Test user credentials by attempting to acquire a new Kerberos Ticket Granting Ticket (TGT).'''
+        path:= "/vault/kerberos/realms/%name%";
+        if test then
+            path:= "/vault/kerberos/realms/%name%/test";
+        end if;
+        result := self.post(datasource, path, data);
+        return result;
+    end define;
+
+    define patch_realm(datasource, realm, data) -> result
+		'''Update a Kerberos realm.'''
+        path:= "/vault/kerberos/realms/%realm%";
+        result := self.patch(datasource, path, data);
+        return result;
+    end define;
+
+    define keytabs(datasource, realm) -> results
+		'''List users with a Kerberos keytab file.'''
+        path:= "/vault/kerberos/realms/%realm%/keytabs";
+        results := self.get(datasource, path);
+        return results;
+    end define;
+
+    define remove_keytab(datasource, realm, username) -> result
+		'''Delete a keytab file.'''
+        path:= "/vault/kerberos/realms/%realm%/keytabs/%username%";
+        result := self.delete(datasource, path);
+        return result;
+    end define;
+
+    define caches(datasource, realm) -> results
+		'''List users with a Kerberos credential cache file.'''
+        path:= "/vault/kerberos/realms/%realm%/ccaches";
+        results := self.get(datasource, path);
+        return results;
+    end define;
+
+    define remove_cache(datasource, realm, username) -> result
+		'''Delete a cedential cache file.'''
+        path:= "/vault/kerberos/realms/%realm%/ccaches/%username%";
+        result := self.delete(datasource, path);
+        return result;
     end define;
 
 end definitions;
@@ -539,13 +1001,21 @@ pattern traversys_framework_test 1.0
         ds:= discovery.dataSource('Disco Oauth');
 
         //log.debug("Getting search results");
-        //results:= twdata.query(ds,"search Host", limit:=50, format:="object");
+        //results:= twdata.search_query(ds,"search Host", limit:=50, format:="object");
+        //self.debug(results);
+
+        //log.debug("Getting node details");
+        //results:= twdata.search_nodes(ds,"30c577625e064d10300bfc686e536f667477617265496e7374616e6365");
+        //self.debug(results);
+
+        //log.debug("Getting SI kind");
+        //results:= twdata.search_kinds(ds,"SoftwareInstance");
         //self.debug(results);
 
         // Credentials
-        log.debug("Running credential types query");
-        credential_types:= twvault.credential_types(ds,category:="Host Credentials");
-        self.debug(credential_types);
+        //log.debug("Running credential types query");
+        //credential_types:= twvault.credential_types(ds,category:="Host Credentials");
+        //self.debug(credential_types);
 
         //log.debug("Running credentials query");
         //credentials:= twvault.credentials(ds,uuid:="");
