@@ -1,5 +1,5 @@
 tpl 1.20 module traversys_selfish;
-    
+
 metadata
     origin := "Traversys";
     tree_path := 'Traversys', 'Frameworks', 'Selfish';
@@ -414,6 +414,8 @@ definitions twadmin 1.0
 
 end definitions;
 
+
+
 definitions twdata 1.0
     """
         Author: Wes Moskal-Fitzpatrick
@@ -597,7 +599,26 @@ definitions twdata 1.0
         return written;
     end define;
 
+    define graph(datasource, node_id, focus:=none, apply_rules:=none, complete:=none) -> results
+		'''Retrieve graph data associated to the given node.'''
+        path:= "/data/nodes/%node_id%/graph";
+        params:= table();
+        if focus then
+            params['focus'] := focus;
+        end if;
+        if apply_rules then
+            params['apply_rules'] := apply_rules;
+        end if;
+        if complete then
+            params['complete'] := complete;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+    end define;
+
 end definitions;
+
+
 
 definitions twdiscovery 1.0
     """
@@ -780,11 +801,13 @@ definitions twdiscovery 1.0
 
 end definitions;
 
+
+
 definitions twknowledge 1.0
     """
         Author: Wes Moskal-Fitzpatrick
 
-        Vault API calls.
+        Knowledge API calls.
 
         Change History:
         2022-07-27 | 1.0 | WMF | Created.
@@ -794,14 +817,14 @@ definitions twknowledge 1.0
     define status(datasource) -> know_status
 		'''Get the current state of the appliance's knowledge, including TKU versions.'''
         path:= "/knowledge";
-        know_status := self.post(datasource, path);
+        know_status := self.get(datasource, path);
         return know_status;
     end define;
 
     define upload_status(datasource) -> know_status
 		'''Get the current state of a knowledge upload.'''
         path:= "/knowledge/status";
-        know_status := self.post(datasource, path);
+        know_status := self.get(datasource, path);
         return know_status;
     end define;
 
@@ -811,7 +834,7 @@ definitions twevents 1.0
     """
         Author: Wes Moskal-Fitzpatrick
 
-        Vault API calls.
+        Events API calls.
 
         Change History:
         2022-07-27 | 1.0 | WMF | Created.
@@ -827,6 +850,316 @@ definitions twevents 1.0
     end define;
 
 end definitions;
+
+
+
+definitions twmodels 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Models API calls.
+
+        Change History:
+        2022-07-28 | 1.0 | WMF | Created.
+
+    """
+
+    define get_models(datasource, name:=none, type:=none, kind:=none, published:=none, review_suggested:=none, version:=none, favorite:=none, compatibility:=none, results_id:=none, delete:=none) -> results
+		'''Get model definitions.'''
+        path:= "/models";
+        params:= table();
+        if name then
+            params['name'] := name;
+        if focus then
+            params['focus'] := focus;
+        end if;
+        if type then
+            params['type'] := type;
+        end if;
+        if kind then
+            params['kind'] := kind;
+        end if;
+        if published then
+            params['published'] := published;
+        end if;
+        if review_suggested then
+            params['review_suggested'] := review_suggested;
+        end if;
+        if version then
+            params['version'] := version;
+        end if;
+        if favorite then
+            params['favorite'] := favorite;
+        end if;
+        if compatibility then
+            params['compatibility'] := compatibility;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+    define get_model(datasource, key) -> result
+		'''Get model definition for the specified key.'''
+        path:= "/models/%key%";
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define new_model(datasource, data) -> result
+		'''Create a new model.'''
+        path:= "/models";
+        result := self.post(datasource, path, data);
+        return result;
+    end define;
+
+    define multi(datasource, data) -> result
+		'''Manipulate multiple models in a single request.'''
+        path:= "/models/multi";
+        result := self.post(datasource, path, data);
+        return result;
+    end define;
+
+    define remove_model(datasource, key) -> result
+		'''Delete a model.'''
+        path:= "/models/%key%";
+        result := self.delete(datasource, path);
+        return result;
+    end define;
+
+    define patch_model(datasource, key, data) -> result
+		'''Modify a model.'''
+        path:= "/models/%key%";
+        result := self.patch(datasource, path, data);
+        return result;
+    end define;
+
+    define model_topology(datasource, key, attributes:=none) -> result
+		'''Get topology for the model definition specified by key.'''
+        path:= "/models/%key%/topology";
+        params:= table();
+        if attributes then
+            params['attributes'] := attributes;
+        end if;
+        param_string:= self.parameters(params);
+        result := self.get(datasource, path, params:=param_string);
+        return result;
+    end define;
+
+    define model_nodes(datasource, key, kind:=none, format:=none, limit:=none, results_id:=none, delete:=none) -> results
+		'''Get nodes for the model definition specified by key.'''
+        path:= "/models/%key%/nodes";
+        params:= table();
+        if kind then
+            path:= "/models/%key%/nodes/%kind%";
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+    define model_node_id(datasource, node_id, expand_related:=none, delete:=none) -> result
+		'''Get/delete model definition for the specified node id.'''
+        path:= "/models/by_node_id/%node_id%";
+        params:= table();
+        if expand_related then
+            params['expand_related'] := expand_related;
+        end if;
+        if delete then
+            result := self.delete(datasource, path);
+        else
+            param_string:= self.parameters(params);
+            result := self.get(datasource, path, params:= param_string);
+        end if;
+        return result;
+    end define;
+
+    define patch_model_node_id(datasource, node_id, data) -> result
+		'''Modify a model by node id.'''
+        path:= "/models/by_node_id/%node_id%";
+        result := self.patch(datasource, path, data);
+        return result;
+    end define;
+
+    define topology_node_id(datasource, node_id, attributes:=none) -> result
+		'''Get topology for the model definition specified by node id.'''
+        path:= "/models/by_node_id/%node_id%/topology";
+        params:= table();
+        if attributes then
+            params['attributes'] := attributes;
+        end if;
+        param_string:= self.parameters(params);
+        result := self.get(datasource, path, params:=param_string);
+        return result;
+    end define;
+
+    define nodecount_by_id(datasource, node_id) -> result
+		'''Get node count for the model definition specified by node id.'''
+        path:= "/models/by_node_id/%node_id%/nodecount";
+        result := self.get(datasource, path);
+        return result;
+    end define;
+
+    define nodes_by_id(datasource, node_id, kind:=none, format:=none, limit:=none, results_id:=none, delete:=none) -> results
+		'''Get nodes for the model definition specified by node id.'''
+        path:= "/models/by_node_id/%node_id%";
+        params:= table();
+        if kind then
+            path:= "/models/by_node_id/%node_id%/%kind%";
+        end if;
+        if format then
+            params['format'] := format;
+        end if;
+        if limit then
+            params['limit'] := limit;
+        end if;
+        if results_id then
+            params['results_id'] := results_id;
+        end if;
+        if delete then
+            params['delete'] := delete;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+end definitions;
+
+
+
+definitions twtaxonomy 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Taxonomy API calls.
+
+        Change History:
+        2022-07-28 | 1.0 | WMF | Created.
+
+    """
+
+    define sections(datasource) -> results
+		'''Get list of taxonomy model sections.'''
+        path:= "/taxonomy/sections";
+        results := self.get(datasource, path);
+        return results;
+    end define;
+
+    define locales(datasource) -> results
+		'''Get list of known taxonomy locales.'''
+        path:= "/taxonomy/locales";
+        results := self.get(datasource, path);
+        return results;
+    end define;
+
+    define nodekinds(datasource, format:=none, section:=none, locale:=none, kind:=none, fieldlists:=none) -> results
+		'''Get list of defined node kinds with kind info.'''
+        path:= "/taxonomy/nodekinds";
+        params:= table();
+        if format then
+            params['format'] := format;
+            params['section'] := section;
+            params['locale'] := locale;
+        elif kind then
+            params['locale'] := locale;
+            path:= "/taxonomy/nodekinds/%kind%";
+            if fieldlists then
+                path:= "/taxonomy/nodekinds/%kind%/fieldlists";
+            end if;
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+    define relkinds(datasource, format:=none, locale:=none, kind:=none) -> results
+		'''Get list of defined node kinds with kind info.'''
+        path:= "/taxonomy/relkinds";
+        params:= table();
+        if format then
+            params['format'] := format;
+            params['locale'] := locale;
+        elif kind then
+            params['locale'] := locale;
+            path:= "/taxonomy/relkinds/%kind%";
+        end if;
+        param_string:= self.parameters(params);
+        results := self.get(datasource, path, params:= param_string);
+        return results;
+    end define;
+
+end definitions;
+
+
+
+definitions twtopology 1.0
+    """
+        Author: Wes Moskal-Fitzpatrick
+
+        Topology API calls.
+
+        Change History:
+        2022-07-28 | 1.0 | WMF | Created.
+
+    """
+
+    define nodes(datasource, data) -> results
+		'''Get topology data from one or more starting nodes.'''
+        path:= "/topology/nodes";
+        results := self.post(datasource, path, data);
+        return results;
+    end define;
+
+    define nodekinds(datasource, data) -> results
+		'''Get nodes of the specified kinds which are related to a given set of nodes.'''
+        path:= "/topology/nodes/kinds";
+        results := self.post(datasource, path, data);
+        return results;
+    end define;
+
+    define visualisation(datasource) -> results
+		'''Get the current state of the visualization for the authenticated user.'''
+        path:= "/topology/visualization_state";
+        results := self.get(datasource, path);
+        return results;
+    end define;
+
+    define patch_visualisation(datasource, data) -> results
+		'''Update one or more attributes of the current state of the visualization for the authenticated user.'''
+        path:= "/topology/visualization_state";
+        results := self.patch(datasource, path, data);
+        return results;
+    end define;
+
+    define replace_visualisation(datasource, data) -> results
+		'''Update any or all of the attributes of the current state of the visualization for the authenticated user.'''
+        path:= "/topology/visualization_state";
+        results := self.put(datasource, path, data);
+        return results;
+    end define;
+
+end definitions;
+
+
 
 definitions twvault 1.0
     """
@@ -972,6 +1305,8 @@ definitions twvault 1.0
     end define;
 
 end definitions;
+
+
 
 pattern traversys_framework_test 1.0
 
