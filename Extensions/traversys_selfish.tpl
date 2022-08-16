@@ -196,8 +196,13 @@ definitions self 1.0
 
     define api_version(datasource) -> result, version
         """ Find the version in use """
+
+        //for k in datasource do
+        //    v:= datasource[k];
+        //    log.debug("datasource: %k%, %v%");
+        //end for;
         
-        result:= discovery.restfulGet(datasource, "oauth2", "/api/about");
+        result:= discovery.restfulGet(datasource, "basic", "/api/about");
         //debug(result);
 
         version:= defaults.api_version;
@@ -738,10 +743,10 @@ definitions twdiscovery 1.0
         end if;
         param_string:= self.parameters(params);
         results := self.get(datasource, path, params:= param_string);
-        return run_result;
+        return results;
     end define;
 
-    define inferred_results(datasource, run_id, inferred_kind:=none, inferred_kind:=none, offset:=none, results_id:=none, format:=none, limit:=none, delete:=none) -> run_result
+    define inferred_results(datasource, run_id, inferred_kind:=none, offset:=none, results_id:=none, format:=none, limit:=none, delete:=none) -> run_result
 		'''Get a summary of the devices inferred by a discovery run which have a specific inferred kind.'''
         path:= "/discovery/runs/%run_id%/inferred";
         if inferred_kind then
@@ -765,7 +770,7 @@ definitions twdiscovery 1.0
         end if;
         param_string:= self.parameters(params);
         results := self.get(datasource, path, params:= param_string);
-        return run_result;
+        return results;
     end define;
 
     define schedules(datasource, run_id:=none) -> schedule
@@ -870,8 +875,6 @@ definitions twmodels 1.0
         params:= table();
         if name then
             params['name'] := name;
-        if focus then
-            params['focus'] := focus;
         end if;
         if type then
             params['type'] := type;
@@ -1071,16 +1074,16 @@ definitions twtaxonomy 1.0
         return results;
     end define;
 
-    define nodekinds(datasource, format:=none, section:=none, locale:=none, kind:=none, fieldlists:=none) -> results
+    define nodekinds(datasource, format:=none, section:=none, loc:=none, kind:=none, fieldlists:=none) -> results
 		'''Get list of defined node kinds with kind info.'''
         path:= "/taxonomy/nodekinds";
         params:= table();
         if format then
             params['format'] := format;
             params['section'] := section;
-            params['locale'] := locale;
+            params['locale'] := loc;
         elif kind then
-            params['locale'] := locale;
+            params['locale'] := loc;
             path:= "/taxonomy/nodekinds/%kind%";
             if fieldlists then
                 path:= "/taxonomy/nodekinds/%kind%/fieldlists";
@@ -1091,15 +1094,15 @@ definitions twtaxonomy 1.0
         return results;
     end define;
 
-    define relkinds(datasource, format:=none, locale:=none, kind:=none) -> results
+    define relkinds(datasource, format:=none, loc:=none, kind:=none) -> results
 		'''Get list of defined node kinds with kind info.'''
         path:= "/taxonomy/relkinds";
         params:= table();
         if format then
             params['format'] := format;
-            params['locale'] := locale;
+            params['locale'] := loc;
         elif kind then
-            params['locale'] := locale;
+            params['locale'] := loc;
             path:= "/taxonomy/relkinds/%kind%";
         end if;
         param_string:= self.parameters(params);
@@ -1122,7 +1125,7 @@ definitions twtopology 1.0
 
     """
 
-    define nodes(datasource, data) -> results
+    define top_nodes(datasource, data) -> results
 		'''Get topology data from one or more starting nodes.'''
         path:= "/topology/nodes";
         results := self.post(datasource, path, data);
@@ -1343,9 +1346,9 @@ pattern traversys_framework_test 1.0
         //results:= twdata.search_nodes(ds,"30c577625e064d10300bfc686e536f667477617265496e7374616e6365");
         //self.debug(results);
 
-        //log.debug("Getting SI kind");
-        //results:= twdata.search_kinds(ds,"SoftwareInstance");
-        //self.debug(results);
+        log.debug("Getting SI kind");
+        results:= twdata.search_kinds(ds,"SoftwareInstance");
+        self.debug(results);
 
         // Credentials
         //log.debug("Running credential types query");
