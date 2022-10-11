@@ -5,6 +5,77 @@ metadata
     tree_path := 'Traversys', 'Functions', 'Definitions';
 end metadata;
 
+definitions print 1.0
+    """
+        Enhanced logging functions.
+
+        Author: Wes Moskal-Fitzpatrick (Traversys)
+
+        Change History:
+        2022-04-27 | 1.0 | WMF | Created
+
+    """
+
+    define info(active, message)
+        """Enhanced info."""
+        if active then
+            log.info("INFO: %message%");
+        end if;
+    end define;
+    
+    define debug(active, message)
+        """Enhanced debug."""
+        if active then
+            log.debug("DEBUG: %message%");
+        end if;
+    end define;
+
+    define critical(active, message)
+        """Enhanced critical."""
+        if active then
+            log.critical("CRITICAL: %message%");
+        end if;
+    end define;
+
+    define warn(active, message)
+        """Enhanced warn."""
+        if active then
+            log.warn("WARNING: %message%");
+        end if;
+    end define;
+
+    define error(active, message)
+        """Enhanced error."""
+        if active then
+            log.error("ERROR: %message%");
+        end if;
+    end define;
+
+    define attribute(active, message, string)
+        """Log an attribute in debug."""
+        if active then
+            log.debug("DEBUG: %message% = %string%");
+        end if;
+    end define;
+
+    define data_type(active, message, attr)
+        """Log an attribute in debug."""
+        if active then
+            dt:= datatype(attr);
+            log.debug("DEBUG: %message% = %dt%");
+        end if;
+    end define;
+
+    define list_size(active, message, _list_)
+        """Get size of a list."""
+        if active then
+            sz:= size(_list_);
+            log.debug("DEBUG: %message% = %sz%");
+        end if;
+    end define;
+
+end definitions;
+
 definitions traversys 1.0
     """
         Custom Traversys Functions
