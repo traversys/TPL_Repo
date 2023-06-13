@@ -208,7 +208,7 @@ pattern traversys_sudo 1.0
 
         expired_users := '';
         user_accounts_expiry_output:= '';
-        if sudo_rules matches '/usr/bin/awk.*/etc/shadow' then
+        if sudo_path then
             expiry_users_command := '%sudo_path% /usr/bin/awk -F: \'$5 != "" && $5 != "99999" { print $1 }\' /etc/shadow';
             expiry_users_cmd := discovery.runCommand(host, expiry_users_command);
 

@@ -77,6 +77,7 @@ pattern traversys_add_hostinfo 1.0
 
         // get vpd info
         get_scsi_id:= discovery.runCommand(host, diskCmds.scsi_id);
+        scsi_id_tab:= table();
 
         if get_scsi_id and get_scsi_id.result then
             for id in text.split(get_scsi_id.result, "\n") do
@@ -323,12 +324,14 @@ pattern traversys_add_hostinfo 1.0
 
         usb_results := discovery.wmiQuery(host, "SELECT * FROM Win32_DiskDrive WHERE InterfaceType = 'USB'", "root\CIMV2" );
         count:= 0;
-        for result in usb_results do
-            for key in result do
-                count:= count+1;
-                host['%key%_%count%']:=key[count];
+        if usb_results and usb_results.results then
+            for result in usb_results do
+                for key in result do
+                    count:= count+1;
+                    host['%key%_%count%']:=key[count];
+                end for;
             end for;
-        end for;
+        end if;
 
         command_names := ["etc_passwd", "etc_group", "getent_passwd", "getent_group", "nis_domain", "nis_master"];
 

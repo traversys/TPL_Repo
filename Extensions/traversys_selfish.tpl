@@ -1336,7 +1336,7 @@ pattern traversys_framework_test 1.0
 
         // Basic Oauth
         log.debug("Getting DS");
-        ds:= discovery.dataSource('Disco Oauth');
+        //ds:= discovery.dataSource('Disco Oauth');
 
         //log.debug("Getting search results");
         //results:= twdata.search_query(ds,"search Host", limit:=50, format:="object");
@@ -1346,9 +1346,9 @@ pattern traversys_framework_test 1.0
         //results:= twdata.search_nodes(ds,"30c577625e064d10300bfc686e536f667477617265496e7374616e6365");
         //self.debug(results);
 
-        log.debug("Getting SI kind");
-        results:= twdata.search_kinds(ds,"SoftwareInstance");
-        self.debug(results);
+        //log.debug("Getting SI kind");
+        //results:= twdata.search_kinds(ds,"SoftwareInstance");
+        //self.debug(results);
 
         // Credentials
         //log.debug("Running credential types query");
