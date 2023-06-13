@@ -77,46 +77,28 @@ pattern traversys_sudo 1.0
             end if;
         end for;
 
-        if not sudo_path_output then
-            for path in sudo_paths do 
-                suexec := discovery.runCommand(host, 'ls %path%');
-            
-                if suexec and suexec.result matches '%path%[^:]' then
-                    sudo_installed_checked := '%path%';
-                    sudo_paths := text.split(sudo_installed_checked, ",");
-                    for path in sudo_paths do
-                        sudo_check := discovery.runCommand(host, '%path% -l | grep -v a_tid');
-                        if sudo_check then
-                            if sudo_check.result matches 'ifconfig|ndd|ethtool' then
-                                sudo_path := '%path%';
-                                sudo_rules := sudo_check.result;
-                            end if;
+        sudo_path := void;
+        sudo_rules := void;
+        for path in sudo_paths do 
+            suexec := discovery.runCommand(host, 'ls %path%');
+        
+            if suexec and suexec.result matches '%path%[^:]' then
+                sudo_installed_checked := '%path%';
+                checked_paths := text.split(sudo_installed_checked, ",");
+                for path in checked_paths do
+                    sudo_check := discovery.runCommand(host, '%path% -l | grep -v a_tid');
+                    if sudo_check then
+                        if sudo_check.result matches 'ifconfig|ndd|ethtool' then
+                            sudo_path := '%path%';
+                            sudo_rules := sudo_check.result;
                         end if;
-                    end for;
-                end if;
-            end for;
-        else
-            log.warn('No sudo found in the expected paths, stopping...');
-            model.withdraw(host,"sudo_path");
-            model.withdraw(host,"sudo_rules");
-            stop;
-        end if;
+                    end if;
+                end for;
+            end if;
+        end for;
 
         host.sudo_path  := '%sudo_path%';
         host.sudo_rules := '%sudo_rules%';
-
-        if host.os_type matches '(?i)linux' or host.os_type matches 'ESX' then
-            sudo_commands := sudo_command_config.linux_commands;
-        elif host.os_type = 'Solaris' then
-            sudo_commands := sudo_command_config.solaris_commands;
-        elif host.os_type = 'AIX' then
-            sudo_commands := sudo_command_config.aix_commands;
-        elif host.os_type = 'HP-UX' then
-            sudo_commands := sudo_command_config.hpux_commands;
-        else
-            log.warn('Host does not match type for additional sudo checks. Stopping...');
-            stop;
-        end if;
 
         da_method := search(in host traverse InferredElement:Inference:Associate:DiscoveryAccess
                                 where _last_marker
@@ -145,22 +127,6 @@ pattern traversys_sudo 1.0
             host.sudo_access := false;
             stop;
         end if;
-
-        for command in sudo_commands do
-            check := 'sudo -l | grep -i ' + command + ' > /dev/null 2>&1; echo $?';
-            run_check := discovery.runCommand(host, check);
-            if run_check.result then
-                exit_code := text.strip(run_check.result);
-                log.debug('command exit code: %exit_code%');
-                if exit_code <> '0' then
-                    if sudo_missing_commands then
-                        sudo_missing_commands := sudo_missing_commands + [command];               
-                    else
-                        sudo_missing_commands := [command];
-                    end if;
-                end if;
-            end if;
-        end for;
 
         which_sudo_cmd := 'which sudo > /dev/null 2>&1; echo $?';
         which_sudo := discovery.runCommand(host, which_sudo_cmd);
@@ -194,7 +160,9 @@ pattern traversys_sudo 1.0
                 dmidecode_result := text.strip(run_dmidecode.result); 
 
                 host.sudo_ethtool_access := exit_codes[ethtool_result];
-                host.sudo_dmidecode_access := exit_codes[dmidecode_result];				
+                host.sudo_dmidecode_access := exit_codes[dmidecode_result];
+
+                sudo_missing_commands:= [];
 
                 if not host.sudo_lsof_access then 
                     sudo_missing_commands := ['lsof'];
@@ -212,6 +180,8 @@ pattern traversys_sudo 1.0
 
         all_users_command := 'awk -F":" \'{ print $1 }\' /etc/passwd';
         all_users_cmd := discovery.runCommand(host, all_users_command);
+        all_users_cmd_output:= '';
+        all_users:= '';
 
         if all_users_cmd then
             all_users_cmd_result := all_users_cmd.result;
@@ -236,6 +206,8 @@ pattern traversys_sudo 1.0
             host.user_accounts := all_users_cmd_output;
         end if;
 
+        expired_users := '';
+        user_accounts_expiry_output:= '';
         if sudo_rules matches '/usr/bin/awk.*/etc/shadow' then
             expiry_users_command := '%sudo_path% /usr/bin/awk -F: \'$5 != "" && $5 != "99999" { print $1 }\' /etc/shadow';
             expiry_users_cmd := discovery.runCommand(host, expiry_users_command);
@@ -277,6 +249,10 @@ pattern traversys_sudo 1.0
 
         login_file := "/etc/login.defs";
         get_login_file_cmd := discovery.fileGet(host, '%login_file%');
+        user_accounts_max_days_output := '';
+        user_accounts_min_days_output := '';
+        user_accounts_min_len_output := '';
+        user_accounts_warn_age_output := '';
         if get_login_file_cmd then
             if get_login_file_cmd.content matches regex '(?i)permission|cannot' then
                 log.error("Cannot open %login_file% file - Not Found");
@@ -338,12 +314,6 @@ pattern traversys_sudo 1.0
             model.withdraw(host,"sudo_shadow_rules");
         else
             host.sudo_shadow_rules := '%sudo_shadow_rules_output%';
-        end if;
-
-        host.sudo_missing_commands := sudo_missing_commands;
-        if not sudo_missing_commands then   
-            sudo_access := true;
-            log.debug('we can run all necessary sudo commands on this host');
         end if;
 
     end body;

@@ -1,4 +1,4 @@
-tpl 1.6 module traversys_AdditionalHostInfo;
+tpl 1.20 module traversys_AdditionalHostInfo;
 
 // TODO: Refactoring and merge similar functions
 
@@ -17,6 +17,7 @@ table command_list 1.0
 end table;
 
 configuration diskCmds 1.0
+    """Disk Commands"""
 
     "Retrieve VPD Info"
     scsi_id:="ls -al /dev/disk/by-id";
@@ -105,8 +106,9 @@ pattern traversys_add_hostinfo 1.0
             // Extract the search list
             DNSSearchList := regex.extract(resolve_conf.content, 'search\s*(.*)', raw'\1');
             if DNSSearchList then
-            // Build list of searches
-            DNSSearchList_output := text.split(DNSSearchList, " ");
+                // Build list of searches
+                DNSSearchList_output := text.split(DNSSearchList, " ");
+                if DNSSearchList_output = '' then model.withdraw(host,"DNSSearchList"); else host.DNSSearchList := DNSSearchList_output; end if;
             end if;
 
             // Extract all valid nameservers
@@ -118,21 +120,19 @@ pattern traversys_add_hostinfo 1.0
             // Extract all options
             DNSOptions := regex.extract(resolve_conf.content, regex 'options\s*(.*)', raw'\1');
             if DNSOptions then
-            // Build list of options
-            DNSOptions_output := text.split(DNSOptions, " ");
+                // Build list of options
+                DNSOptions_output := text.split(DNSOptions, " ");
+                if DNSOptions_output = '' then model.withdraw(host,"DNSOptions"); else host.DNSOptions := DNSOptions_output; end if;
             end if;
 
             // Extract all comments
             ResolvConfComments_output := regex.extractAll(resolve_conf.content, regex '#(.*)');
 
             //Write attributes to host node
-            if ResolvConf_output = '' then model.withdraw(host,"ResolvConf"); else host.ResolvConf := ResolvConf_output; end if;
             if ResolvConfComments_output = '' then model.withdraw(host,"ResolvConfComments"); else host.ResolvConfComments := ResolvConfComments_output; end if;
             if DNSDomain_output = '' then model.withdraw(host,"DNSDomain"); else host.DNSDomain := DNSDomain_output; end if;
-            if DNSSearchList_output = '' then model.withdraw(host,"DNSSearchList"); else host.DNSSearchList := DNSSearchList_output; end if;
             if DNSNameServers_output = '' then model.withdraw(host,"DNSNameServers"); else host.DNSNameServers := DNSNameServers_output; end if;
             if DNSNameServersExclude_output = '' then model.withdraw(host,"DNSNameServersExclude"); else host.DNSNameServersExclude := DNSNameServersExclude_output; end if;
-            if DNSOptions_output = '' then model.withdraw(host,"DNSOptions"); else host.DNSOptions := DNSOptions_output; end if;
             
             // Legacy command
             if cmd_linux and cmd_linux.result then
@@ -195,93 +195,67 @@ pattern traversys_add_hostinfo 1.0
             model.removeDisplayAttribute(host, "DNSServers");
         end if;
 
-        // look for redhat4 blocks if none found via rhel5 method
-        lun_blocklist:=discovery.runCommand(host, diskCmds.blocklist);
-
-        if lun_blocklist and lun_blocklist.result then
-
-            rh_four_cleaned_lun:=regex.extract(cleaned_lun, regex '(/devices/*.*)', raw '\1');
-
-            for line in text.split(rh4_lun_blocklist.result, "\n") do
-                get_block_end:= regex.extract(line, regex '/devices/\S+/\S+/\S+/\S+/(\S+)', raw '\1');
-                get_block_end:=text.strip(get_block_end);
-                get_clean:=regex.extract(rh_four_cleaned_lun, regex '\/(\d+:\d+:\d+:\d+)', raw '\1');
-                get_clean:=text.strip(get_clean);
-                if get_block_end = get_clean then
-                    rh_block_letters:=regex.extract(line, regex '/(\w+)', raw '\1');
-                    cleaned_block:=rh_block_letters;
-                end if;
-            end for;
-
-            if cleaned_block and lun_capacity = 0 then
-                get_sysfs_block_size:=discovery.runCommand(host, "cat /sys/block/%cleaned_block%/size");
-                if get_sysfs_block_size and get_sysfs_block_size.result then
-                    lun_capacity:=get_sysfs_block_size.result;
-                    lun_capacity:=text.strip(lun_capacity);
-                end if;
-            end if;
-
-        end if;
-
         wmi:=discovery.wmiQuery(host, diskCmds.wmi_diskdrive, 'root\cimv2');
         if not wmi then
             log.warn('wmi diskdrive not found');
         end if;
 
         logical_disk_run:=discovery.wmiQuery(host, diskCmds.wmi_logicaldisk, 'root\cimv2');
-
-        if assoc_query and logical_disk_run and wmi_logical_disks then
-
-        for line in logical_disk_run do
-            stripped_id:=text.strip(line.DeviceID);
-            logical_box[stripped_id]:=line.FreeSpace;
-        end for;
-
-        win_root:=discovery.wmiQuery(host, diskCmds.wmi_windir, 'root\cimv2');
-
-        if win_root then
-            wroot:=win_root[0].WindowsDirectory;
-            for elements in win_root do
-                wroot:=win_root[0].WindowsDirectory;
-            end for;
-        else
-            checkdir:=discovery.listDirectory(host,"C:\WINNT");
-
-            if checkdir then
-                win_root:="C:\WINNT";
-            else
-                checkdir:=discovery.listDirectory(host,"C:\WINDOWS");
-                win_root:="C:\WINDOWS";
-            end if;
-            for elements in win_root do
-                wroot:=win_root;
-            end for;
-        end if;
-
         assoc_query:=discovery.wmiQuery(host, diskCmds.wmi_dddp, 'root\cimv2');
-
-        if assoc_query and logical_disk_run and wmi_logical_disks then
-
-        for line in logical_disk_run do
-            stripped_id:=text.strip(line.DeviceID);
-            logical_box[stripped_id]:=line.FreeSpace;
-        end for;
-
-        for line in assoc_query do
-            assocs_id:=line.Dependent;
-            assocs_map:=regex.extract(line.Antecedent, regex '=".\\\\\\.\\(\S+)"', raw '\1');
-            assocs_map:=text.strip(assocs_map);
-            assocs_id:=text.strip(assocs_id);
-            drive_box[assocs_map]:=assocs_id;
-        end for;
-
         wmi_logical_disks:=discovery.wmiQuery(host, diskCmds.wmi_ldp, 'root\cimv2');
 
-        for line in wmi_logical_disks do
-            getletter:=regex.extract(line.Dependent, regex '="(\S+)"', raw '\1');
-            logicalid:=text.strip(line.Antecedent);
-            large_box[logicalid]:=getletter;
-        end for;
+        if assoc_query and logical_disk_run and wmi_logical_disks then
+
+            for line in logical_disk_run do
+                stripped_id:=text.strip(line.DeviceID);
+                logical_box[stripped_id]:=line.FreeSpace;
+            end for;
+
+            win_root:=discovery.wmiQuery(host, diskCmds.wmi_windir, 'root\cimv2');
+
+            if win_root then
+                wroot:=win_root[0].WindowsDirectory;
+                for elements in win_root do
+                    wroot:=win_root[0].WindowsDirectory;
+                end for;
+            else
+                checkdir:=discovery.listDirectory(host,"C:\WINNT");
+
+                if checkdir then
+                    win_root:="C:\WINNT";
+                else
+                    checkdir:=discovery.listDirectory(host,"C:\WINDOWS");
+                    win_root:="C:\WINDOWS";
+                end if;
+                for elements in win_root do
+                    wroot:=win_root;
+                end for;
+            end if;
+            
+            if assoc_query and logical_disk_run and wmi_logical_disks then
+
+                for line in logical_disk_run do
+                    stripped_id:=text.strip(line.DeviceID);
+                    logical_box[stripped_id]:=line.FreeSpace;
+                end for;
+
+                for line in assoc_query do
+                    assocs_id:=line.Dependent;
+                    assocs_map:=regex.extract(line.Antecedent, regex '=".\\\\\\.\\(\S+)"', raw '\1');
+                    assocs_map:=text.strip(assocs_map);
+                    assocs_id:=text.strip(assocs_id);
+                    drive_box[assocs_map]:=assocs_id;
+                end for;
+
+                for line in wmi_logical_disks do
+                    getletter:=regex.extract(line.Dependent, regex '="(\S+)"', raw '\1');
+                    logicalid:=text.strip(line.Antecedent);
+                    large_box[logicalid]:=getletter;
+                end for;
+
+            end if;
+
+        end if;
 
         tcp_keep_alive := '';
 
@@ -323,7 +297,7 @@ pattern traversys_add_hostinfo 1.0
             host.DNS_name_servers := regex.extractAll(rc.content, regex 'nameserver\s+(\S+)');
         end if;
         
-        if (device.os_type has subword 'Linux' or device.os_type has subword 'ESX') then
+        if (host.os_type has subword 'Linux' or host.os_type has subword 'ESX') then
             mtab := '/etc/mtab';
             mt := discovery.fileGet(host, mtab);
             if mt then
@@ -335,22 +309,24 @@ pattern traversys_add_hostinfo 1.0
   
         if size(interface_name) > 0 then
             for NIC in interface_name do
-            int_cmd := discovery.runCommand(host, "/sbin/ifconfig %NIC.name%");
-            if int_cmd then
-                int := '%int_cmd.result%';
-	            if int has substring "UP" and int has substring "RUNNING" then
-	                NIC.state := "UP";
-	            else
-	                NIC.state :="DOWN";
-	        end if;
+                int_cmd := discovery.runCommand(host, "/sbin/ifconfig %NIC.name%");
+                if int_cmd then
+                    int := '%int_cmd.result%';
+                    if int has substring "UP" and int has substring "RUNNING" then
+                        NIC.state := "UP";
+                    else
+                        NIC.state :="DOWN";
+                    end if;
+                end if;
+            end for;
         end if;
 
         usb_results := discovery.wmiQuery(host, "SELECT * FROM Win32_DiskDrive WHERE InterfaceType = 'USB'", "root\CIMV2" );
-        count:= 0
+        count:= 0;
         for result in usb_results do
             for key in result do
-                count:= count+1
-                host.['%key%_%count%']:=key[count];
+                count:= count+1;
+                host['%key%_%count%']:=key[count];
             end for;
         end for;
 
@@ -366,7 +342,7 @@ pattern traversys_add_hostinfo 1.0
                     model.withdraw(host,"%command_name%");
                 else
                     //write results to host node attributes
-                    log.info("Writing data to host.%command_name% on %hostname%.");
+                    log.info("Writing data to host.%command_name% on %host.name%.");
                     if command_name = 'etc_passwd' then
                         host.etc_passwd := run_command_result;
                     elif command_name = 'etc_group' then
@@ -423,10 +399,11 @@ pattern traversys_getUninstallList 1.0
     log.info ('%hostname%: Running Reg Query...');
 
     for regkeys in regkey do
-    log.debug('%hostname%: Regkeys value: %regkeys%');
+        log.debug('%hostname%: Regkeys value: %regkeys%');
 
         uninstall := discovery.registryKey(host, regkeys);
         log.debug('%hostname%: Unistall key values retrieved: %uninstall%');
+    end for;
     
   end body;
   

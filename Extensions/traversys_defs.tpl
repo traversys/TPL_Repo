@@ -5,7 +5,7 @@ metadata
     tree_path := 'Traversys', 'Functions', 'Definitions';
 end metadata;
 
-definitions print 1.0
+definitions print 1.1
     """
         Enhanced logging functions.
 
@@ -13,6 +13,8 @@ definitions print 1.0
 
         Change History:
         2022-04-27 | 1.0 | WMF | Created
+        2023-06-13 | 1.1 | WMF | Commented out datatype function.
+                                 Merged and removed duplicate print func.
 
     """
 
@@ -58,13 +60,14 @@ definitions print 1.0
         end if;
     end define;
 
-    define data_type(active, message, attr)
-        """Log an attribute in debug."""
-        if active then
-            dt:= datatype(attr);
-            log.debug("DEBUG: %message% = %dt%");
-        end if;
-    end define;
+    // Cannot call variable "datatype" on CE edition?
+    //define data_type(active, message, attr)
+    //    """Log an attribute in debug."""
+    //    if active then
+    //        dt:= datatype(attr);
+    //        log.debug("DEBUG: %message% = %dt%");
+    //    end if;
+    //end define;
 
     define list_size(active, message, _list_)
         """Get size of a list."""
@@ -76,7 +79,7 @@ definitions print 1.0
 
 end definitions;
 
-definitions traversys 1.0
+definitions traversys 1.1
     """
         Custom Traversys Functions
 
@@ -84,6 +87,9 @@ definitions traversys 1.0
 
         Change History:
         2013-02-11 | 1.0 | WMF | Created
+        2023-06-13 | 1.1 | WMF | Fixed missing param on build_key().
+                                 Fixed some missing semi-colons and relationship
+                                 keyword on quick relationships func.
 
     """
     
@@ -297,11 +303,11 @@ definitions traversys 1.0
             List of values in order, with hash option
         """
         if hash then
-            key:= text.hash(text.join(list_of_attrs, "/");
+            key:= text.hash(text.join(list_of_attrs, "/"));
         else
             key:= text.join(list_of_attrs, "/");
         end if;
-        return key
+        return key;
     end define;
 
     define display_attrs(n,l)
@@ -317,7 +323,7 @@ definitions traversys 1.0
         model.addDisplayAttribute(n,l);
     end define;
 
-    define cleanse(dirty, q=true, u=true) -> clean
+    define cleanse(dirty, q:=true, u:=true) -> clean
         "Cleanup attributes"
         // Strip Whitespace
         dirty:= text.strip(dirty);
@@ -359,26 +365,26 @@ definitions traversys 1.0
     end define;
 
     // Quick Relationships
-    define model_rel(relationship,first,second)
+    define model_rel(rel,first,second)
         """
             Quick relationship inference.
             First - the first ordinal node in the heirachy: i.e. the container or server
             Second - the node to be subject: i.e. the contained, dependent or client
         """
-        if relationship = "Containment" then
+        if rel = "Containment" then
             //model.rel.Containment(Container := node, Contained := node);
             model.rel.Containment(Container:=first, Contained:=second);
-        elif relationship = "Dependency" then
+        elif rel = "Dependency" then
             //model.rel.Dependency(DependedUpon:=node,Dependant:=node);
             model.rel.Dependency(DependedUpon:=first, Dependant:=second);
-        elif relationship = "Detail" then
+        elif rel = "Detail" then
             //model.rel.Detail(ElementWithDetail:=node, Detail:=node);
             model.rel.Detail(ElementWithDetail:=first, Detail:=second);
-        elif relationship = "Communication" then
+        elif rel = "Communication" then
             //model.rel.Communication(Server:=node, Client:=node);
             model.rel.Communication(Server:=first, Client:=second);
         else
-            log.warn("Relationship %relationship% not recognised!");
+            log.warn("Relationship %rel% not recognised!");
         end if;
     end define;
 
@@ -390,7 +396,6 @@ definitions traversys 1.0
         results:=search(in node
                         traverse :HostedSoftware::SoftwareInstance 
                             where type = "%type%");
-        end if;
         return results;
     end define;
 
@@ -418,7 +423,9 @@ definitions traversys 1.0
         """
         now := time.current();
         threshold := time.delta(days:=age);
-        for n in current_nodes do
+        existing_keys := [];
+        new_keys := [];
+        for n in existing_nodes do
             list.append(existing_keys , n.key);
         end for;
         for n in new_nodes do
@@ -433,9 +440,9 @@ definitions traversys 1.0
         if size(key_removal) > 0 then
             for n in existing_nodes do
                 if n.key in key_removal then
-                    if now - node.last_seen > threshold then
-                        log.warn("%node.name% older than %age%, removing...");
-                        model.destroy(node);
+                    if now - n.last_seen > threshold then
+                        log.warn("%n.name% older than %age%, removing...");
+                        model.destroy(n);
                     end if;
                 end if;
             end for;
@@ -456,77 +463,6 @@ definitions traversys 1.0
                     model.destroy(hostnode);
                 end if;
             end for;
-        end if;
-    end define;
-
-end definitions;
-
-definitions print 1.0
-    """
-        Enhanced logging functions.
-
-        Author: Wes Moskal-Fitzpatrick
-
-        Change History:
-        2022-04-27 | 1.0 | WMF | Created
-
-    """
-
-    define info(active, message)
-        """Enhanced info."""
-        if active then
-            log.info(message);
-        end if;
-    end define;
-    
-    define debug(active, message)
-        """Enhanced debug."""
-        if active then
-            log.debug(message);
-        end if;
-    end define;
-
-    define critical(active, message)
-        """Enhanced critical."""
-        if active then
-            log.critical(message);
-        end if;
-    end define;
-
-    define warn(active, message)
-        """Enhanced warn."""
-        if active then
-            log.warn(message);
-        end if;
-    end define;
-
-    define error(active, message)
-        """Enhanced error."""
-        if active then
-            log.error(message);
-        end if;
-    end define;
-
-    define attribute(active, message, attribute)
-        """Log an attribute in debug."""
-        if active then
-            log.debug("%message% = %attribute%");
-        end if;
-    end define;
-
-    define data_type(active, message, attribute)
-        """Log an attribute in debug."""
-        if active then
-            dt:= datatype(attribute);
-            log.debug("%message% = %dt%");
-        end if;
-    end define;
-
-    define list_size(active, message, _list_)
-        """Get size of a list."""
-        if active then
-            sz:= size(_list_);
-            log.debug("%message% = %sz%");
         end if;
     end define;
 
