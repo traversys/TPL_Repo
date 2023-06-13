@@ -1,4 +1,4 @@
-tpl 1.18 module traversys_defs;
+tpl 1.20 module traversys_defs;
     
 metadata
     origin := "Traversys";
@@ -60,14 +60,13 @@ definitions print 1.1
         end if;
     end define;
 
-    // Cannot call variable "datatype" on CE edition?
-    //define data_type(active, message, attr)
-    //    """Log an attribute in debug."""
-    //    if active then
-    //        dt:= datatype(attr);
-    //        log.debug("DEBUG: %message% = %dt%");
-    //    end if;
-    //end define;
+    define data_type(active, message, attr)
+        """Log an attribute in debug."""
+        if active then
+            dt:= datatype(attr);
+            log.debug("DEBUG: %message% = %dt%");
+        end if;
+    end define;
 
     define list_size(active, message, _list_)
         """Get size of a list."""
@@ -160,6 +159,46 @@ definitions traversys 1.1
     
         return version, pkg_name;
         
+    end define;
+
+    define getPackages(host, match_list) -> version, product_version, revision, build, description, display
+        """
+            Get the best package and other details.
+        """
+
+        version         := void;
+        product_version := void;
+        revision        := void;
+        build           := void;
+        description     := void;
+        display         := [];
+
+        packages := model.findPackages(host, match_list);
+        for pkg in packages do
+            if "version" in pkg then
+                if pkg.version > version then
+                    version := pkg.version;
+                    product_version:= regex.extract(version, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= version);
+                    list.append(display, "version");
+                    list.append(display, "product_version");
+                    if "revision" in pkg then
+                        revision := pkg.revision;
+                        list.append(display, "revision");
+                    end if;
+                    if "description" in pkg then
+                        description:= pkg.description;
+                        list.append(display, "description");
+                    end if;
+                    if "build" in pkg then
+                        build := pkg.build;
+                        list.append(display, "build");
+                    end if;
+                end if;
+            end if;
+        end for;
+
+        return version, product_version, revision, build, description, display;
+
     end define;
     
     define communicatingServices(si) -> commSIs, dds, dbs
@@ -269,6 +308,23 @@ definitions traversys 1.1
             v:=l[0];
         end if;
         return v;
+    end define;
+
+    define xpathEvaluate(xmldoc, path) -> single_value, list_value, success
+        """
+            Return both list and singular results.
+        """
+    
+        list_value   := xpath.evaluate(xmldoc, path);
+        single_value := none;
+        success      := false;
+        if size(list_value) > 0 then
+            single_value:= list_value[0];
+            success:= true;
+        end if;
+
+        return single_value, list_value, success;
+
     end define;
 
     define regex_shuffle(rx, var, rw) -> val
@@ -466,6 +522,24 @@ definitions traversys 1.1
         end if;
     end define;
 
+    define getFileContent(host, config_file) -> file, content, success
+        """
+            Get and validate the config file.
+        """
+    
+        file    := discovery.fileGet(host, config_file);
+        content := none;
+        success := false;
+        if file and file.content then
+            log.debug("Found config file: %file.path%");
+            success:= true;
+            content:= file.content;
+        end if;
+
+        return file, content, success;
+
+    end define;
+
 end definitions;
 
 definitions node 1.0
@@ -502,6 +576,45 @@ definitions node 1.0
             node[attribute]:= void;
             model.removeDisplayAttribute(node, attribute);
         end for;
+    end define;
+
+    define displayAttribute(node, attr, value)
+        """
+            Add a list of attributes or void them.
+        """
+        adt:= datatype(value);
+        if adt = "void" then
+            node[attr]:= void;
+            log.debug("Attribute %attr% is void.");
+        elif adt = "none" then
+            node[attr]:= void;
+            log.debug("Attribute %attr% is none.");
+        elif adt = "list" then
+            if size(adt) > 0 then
+                node[attr]:= value;
+                model.addDisplayAttribute(node, attr);
+            else
+                node[attr]:= void;
+                log.debug("Attribute list %attr% is empty.");
+            end if;
+        elif adt = "node" then
+            log.warn("Attribute %attr% is a node.");
+            node[attr]:= void;
+        elif adt = "relationship" then
+            log.warn("Attribute %attr% is a relationship.");
+            node[attr]:= void;
+        elif adt = "nodeset" then
+            log.warn("Attribute %attr% is a nodeset.");
+            node[attr]:= void;
+        elif adt = "unknown" then
+            log.warn("Setting attribute %attr% (unknown data type).");
+            node[attr]:= value;
+            model.addDisplayAttribute(node, attr);
+        else
+            node[attr]:= value;
+            model.addDisplayAttribute(node, attr);
+        end if;
+
     end define;
 
 end definitions;
@@ -552,8 +665,34 @@ definitions output 1.0
 			
 		end if;	
 
-    return readable_format;
-  end define;
+        return readable_format;
+    
+    end define;
+
+end definitions;
+
+  definitions specials 1.0
+    """ 
+        Special Functions.
+
+        Author: Wes Moskal-Fitzpatrick
+
+        Change History:
+        2014-11-12 | 1.0 | WMF | Created
+    """
+
+    define slashes(host) -> slash
+        """
+            Set direction of slashes for filepaths.
+        """
+        slash := "/"; // Linux
+        if host.os_type = "Windows" then
+            slash := "\\";
+        end if;
+    
+        return slash;
+
+    end define;
 
 end definitions;
 
