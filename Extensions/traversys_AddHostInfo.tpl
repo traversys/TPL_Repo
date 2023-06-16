@@ -102,38 +102,41 @@ pattern traversys_add_hostinfo 1.0
             cmd_linux:= discovery.runCommand(host, "grep nameserver /etc/resolv.conf | awk '{print $2}'");
 
             // Extract the domain
-            DNSDomain_output := regex.extract(resolve_conf.content, 'domain\s*(.*)', raw'\1');
+            if resolve_conf and resolve_conf.content then
+                DNSDomain_output := regex.extract(resolve_conf.content, 'domain\s*(.*)', raw'\1');
 
-            // Extract the search list
-            DNSSearchList := regex.extract(resolve_conf.content, 'search\s*(.*)', raw'\1');
-            if DNSSearchList then
-                // Build list of searches
-                DNSSearchList_output := text.split(DNSSearchList, " ");
-                if DNSSearchList_output = '' then model.withdraw(host,"DNSSearchList"); else host.DNSSearchList := DNSSearchList_output; end if;
+                // Extract the search list
+                DNSSearchList := regex.extract(resolve_conf.content, 'search\s*(.*)', raw'\1');
+                if DNSSearchList then
+                    // Build list of searches
+                    DNSSearchList_output := text.split(DNSSearchList, " ");
+                    if DNSSearchList_output = '' then model.withdraw(host,"DNSSearchList"); else host.DNSSearchList := DNSSearchList_output; end if;
+                end if;
+
+                // Extract all valid nameservers
+                DNSNameServers_output := regex.extractAll(resolve_conf.content, regex '[^#]\s*nameserver\s*(\S+)');
+
+                // Extract all excluded nameservers
+                DNSNameServersExclude_output := regex.extractAll(resolve_conf.content, regex '#\s*nameserver\s*(\S+)');
+
+                // Extract all options
+                DNSOptions := regex.extract(resolve_conf.content, regex 'options\s*(.*)', raw'\1');
+                if DNSOptions then
+                    // Build list of options
+                    DNSOptions_output := text.split(DNSOptions, " ");
+                    if DNSOptions_output = '' then model.withdraw(host,"DNSOptions"); else host.DNSOptions := DNSOptions_output; end if;
+                end if;
+
+                // Extract all comments
+                ResolvConfComments_output := regex.extractAll(resolve_conf.content, regex '#(.*)');
+
+                //Write attributes to host node
+                if ResolvConfComments_output = '' then model.withdraw(host,"ResolvConfComments"); else host.ResolvConfComments := ResolvConfComments_output; end if;
+                if DNSDomain_output = '' then model.withdraw(host,"DNSDomain"); else host.DNSDomain := DNSDomain_output; end if;
+                if DNSNameServers_output = '' then model.withdraw(host,"DNSNameServers"); else host.DNSNameServers := DNSNameServers_output; end if;
+                if DNSNameServersExclude_output = '' then model.withdraw(host,"DNSNameServersExclude"); else host.DNSNameServersExclude := DNSNameServersExclude_output; end if;
+
             end if;
-
-            // Extract all valid nameservers
-            DNSNameServers_output := regex.extractAll(resolve_conf.content, regex '[^#]\s*nameserver\s*(\S+)');
-
-            // Extract all excluded nameservers
-            DNSNameServersExclude_output := regex.extractAll(resolve_conf.content, regex '#\s*nameserver\s*(\S+)');
-
-            // Extract all options
-            DNSOptions := regex.extract(resolve_conf.content, regex 'options\s*(.*)', raw'\1');
-            if DNSOptions then
-                // Build list of options
-                DNSOptions_output := text.split(DNSOptions, " ");
-                if DNSOptions_output = '' then model.withdraw(host,"DNSOptions"); else host.DNSOptions := DNSOptions_output; end if;
-            end if;
-
-            // Extract all comments
-            ResolvConfComments_output := regex.extractAll(resolve_conf.content, regex '#(.*)');
-
-            //Write attributes to host node
-            if ResolvConfComments_output = '' then model.withdraw(host,"ResolvConfComments"); else host.ResolvConfComments := ResolvConfComments_output; end if;
-            if DNSDomain_output = '' then model.withdraw(host,"DNSDomain"); else host.DNSDomain := DNSDomain_output; end if;
-            if DNSNameServers_output = '' then model.withdraw(host,"DNSNameServers"); else host.DNSNameServers := DNSNameServers_output; end if;
-            if DNSNameServersExclude_output = '' then model.withdraw(host,"DNSNameServersExclude"); else host.DNSNameServersExclude := DNSNameServersExclude_output; end if;
             
             // Legacy command
             if cmd_linux and cmd_linux.result then
