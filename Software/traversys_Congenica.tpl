@@ -7,6 +7,12 @@ end metadata;
 
 from traversys_defs import traversys 1.0;
 
+configuration defaults 1.0
+    """Default Application Config"""
+
+    "install_dir" data_dir := "/data/congenica";
+
+end configuration;
 
 pattern Congica_SI_Control_Plane 1.0
     '''
@@ -121,26 +127,78 @@ pattern Congenica_SI_Containers 1.0
         n:= "%docker_type% on %h.name%";
         si_type:= docker_type;
         container_type:= kube_type;
-        install_dir:= "/data/congenica";
+        install_dir:= defaults.data_dir;
 
         // Bastion Node Identification
         if p.args matches regex "\bcontainerd\b" then
             si_type:= "Bastion Node";
             // Check for install dir
-            dir:= discovery.listDirectory(h, install_dir);
-            if size(dir) > 0 then
-                reqs_txt:= discovery.fileGet(h, install_dir+"/congenica-deployments/installer_v1/requirements.txt");
-                ks_dir:= discovery.listDirectory(h, install_dir+"/congenica-deployments/kubespray-deployments");
-                // Get deployments, there may be many as this has not been cleaned up
-                for deployment in ks_dir do
-                    if deployment.file_type = "Directory" then
-                        deploy_dir:= discovery.listDirectory(h, install_dir+"/congenica-deployments/kubespray-deployments/"+deployment.name);
-                        for deploy in deploy_dir do
-                            inventory_dir:= discovery.listDirectory(h, install_dir+"/congenica-deployments/kubespray-deployments/"+deployment.name+"/inventory");
-                        end for;
+            //pwd:= discovery.runCommand(h, "echo $PWD");
+            customer:= discovery.runCommand(h, "echo $CUSTOMER");
+            release:= discovery.runCommand(h, "echo $RELEASE");
+            assembly:= discovery.runCommand(h, "echo $ASSEMBLY");
+            pipe_release:= discovery.runCommand(h, "echo $PIPELINE_RELEASE");
+            web_release:= discovery.runCommand(h, "echo $ASSEMBLY");
+            cadd_release:= discovery.runCommand(h, "echo $ASSEMBLY");
+            bundle_release:= discovery.runCommand(h, "echo $BUNDLE_RELEASE");
+            ref_data_root:= discovery.runCommand(h, "echo $REFDATAROOT");
+            //if pwd and pwd.result then
+            //    install_dir:= pwd.result;
+            //end if;
+            root_dir:= discovery.listDirectory(h, install_dir);
+            if size(install_dir) > 0 then
+                kubespray_dir:= install_dir+"/congenica-deployments/kubespray-deployments";
+                reference_dir:= install_dir+"/reference/pipeline/current";
+                ref_dir:= discovery.listDirectory(h, reference_dir);
+                ansible_f:= discovery.runCommand(h, "cat %install_dir%/ansible.log | ansible.cfg");
+                if ansible_f and ansible_f.result then
+                    ansible_cfg:= regex.extract(ansible_f.result, regex "Using\s(\/\S+)", raw "\1");
+                    if ansible_cfg then
+                        ansible_conf:= discovery.fileGet(h, ansible_cfg);
+                        if ansible_conf and ansible_conf.content then
+                            kubespray_dir:= regex.extract(ansible_conf.content, regex "(\/\S+\/kubespray-(\d+\.?)+)");
+                        end if;
                     end if;
-                end for;
+                end if;
+                values_yml:= discovery.fileGet(h, install_dir+"/congenica-deployments/installer_v1/values.yaml");
+                ks_dir:= discovery.listDirectory(h, kubespray_dir);
+                cluster_yml:= discovery.fileGet(h, kubespray_dir+"/cluster.yml");
+                dockerfile:= discovery.fileGet(h, kubespray_dir+"/Dockerfile");
+                kreqs_txt:= discovery.fileGet(h, kubespray_dir+"/requirements.txt");
+                // Check for inventory
+                inventory_dir:= kubespray_dir+"/inventory";
+                if customer then
+                    inventory_ini:= discovery.fileGet(h, inventory_dir+customer.result+"/inventory.ini");
+                else
+                    for file in ks_dir do
+                        if file.file_type = "Directory" then
+                            if file.name in [ "sample", "local", "vmware-dev", "vmware-innovation" ] then
+                                //skip
+                                continue;
+                            else
+                                inventory_ini:= discovery.fileGet(h, inventory_dir+file.name+"/inventory.ini");
+                            end if;
+                        end if;
+                    end for;
+                end if;
             end if;
+
+            // Kubernetes info
+            k_version:= discovery.runCommand(h, "kubectl version");
+            k_nodes:= discovery.runCommand(h, "kubectl get nodes");
+            k_labels:= discovery.runCommand(h, "kubectl get nodes --show-labels");
+            k_pods:= discovery.runCommand(h, "kubectl -n kube-system get pods");
+
+            // Helm info
+            helm_ls:= discovery.runCommand(h, "helm ls -A -a");
+            helm_v:= discovery.runCommand(h, "helm version");
+            helm_n:= discovery.runCommand(h, "helm -n kube-system ls");
+
+            // Docker info
+            images:= discovery.runCommand(h, "docker images");
+            
+
+
         end if;
 
         v_cmd:= discovery.runCommand(h, "docker version");
