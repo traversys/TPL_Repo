@@ -7,6 +7,22 @@ end metadata;
 
 from traversys_defs import traversys 1.0;
 
+definitions PostgreSQL 1.0
+    """Queries for Postgres DB"""
+
+    type := sql_discovery;
+    group := "PostgreSQL RDBMS";
+
+    define getBilling
+        """
+            This SQL query is calling a stored function named `get_customer_billing_patient_counts` that exists in the `core` schema.
+            get_customer_billing_patient_counts`: This is the name of the function being called.
+        """
+       query := "SELECT * FROM core.get_customer_billing_patient_counts(array['']);";
+    end define;
+
+end definitions;
+
 configuration defaults 1.0
     """Default Application Config"""
 
@@ -132,6 +148,7 @@ pattern Congenica_SI_Containers 1.0
         // Bastion Node Identification
         if p.args matches regex "\bcontainerd\b" then
             si_type:= "Bastion Node";
+            n:= "%si_type% on %h.name%";
             // Check for install dir
             //pwd:= discovery.runCommand(h, "echo $PWD");
             customer:= discovery.runCommand(h, "echo $CUSTOMER");
@@ -150,44 +167,44 @@ pattern Congenica_SI_Containers 1.0
                 kubespray_dir:= install_dir+"/congenica-deployments/kubespray-deployments";
                 reference_dir:= install_dir+"/reference/pipeline/current";
                 ref_dir:= discovery.listDirectory(h, reference_dir);
-                ansible_f:= discovery.runCommand(h, "cat %install_dir%/ansible.log | ansible.cfg");
+                ansible_f:= discovery.runCommand(h, "cat %install_dir%/ansible.log | grep 'ansible.cfg'");
                 if ansible_f and ansible_f.result then
                     ansible_cfg:= regex.extract(ansible_f.result, regex "Using\s(\/\S+)", raw "\1");
+                    kubespray_dir:= regex.extract(ansible_f.result, regex "(\/\S+\/kubespray-(\d+\.?)+)", raw "\1");
                     if ansible_cfg then
                         ansible_conf:= discovery.fileGet(h, ansible_cfg);
-                        if ansible_conf and ansible_conf.content then
-                            kubespray_dir:= regex.extract(ansible_conf.content, regex "(\/\S+\/kubespray-(\d+\.?)+)");
+                    end if;
+                    if kubespray_dir then
+                        ks_dir:= discovery.listDirectory(h, kubespray_dir);
+                        cluster_yml:= discovery.fileGet(h, kubespray_dir+"/cluster.yml");
+                        dockerfile:= discovery.fileGet(h, kubespray_dir+"/Dockerfile");
+                        kreqs_txt:= discovery.fileGet(h, kubespray_dir+"/requirements.txt");
+                        // Check for inventory
+                        inventory_dir:= kubespray_dir+"/inventory";
+                        if customer then
+                            inventory_ini:= discovery.fileGet(h, inventory_dir+"/"+text.strip(text.strip(customer.result, "\n"))+"/inventory.ini");
+                        else
+                            for file in ks_dir do
+                                if file.file_type = "Directory" then
+                                    if file.name in [ "sample", "local", "vmware-dev", "vmware-innovation" ] then
+                                        //skip
+                                        continue;
+                                    else
+                                        inventory_ini:= discovery.fileGet(h, inventory_dir+file.name+"/inventory.ini");
+                                    end if;
+                                end if;
+                            end for;
                         end if;
                     end if;
-                end if;
-                values_yml:= discovery.fileGet(h, install_dir+"/congenica-deployments/installer_v1/values.yaml");
-                ks_dir:= discovery.listDirectory(h, kubespray_dir);
-                cluster_yml:= discovery.fileGet(h, kubespray_dir+"/cluster.yml");
-                dockerfile:= discovery.fileGet(h, kubespray_dir+"/Dockerfile");
-                kreqs_txt:= discovery.fileGet(h, kubespray_dir+"/requirements.txt");
-                // Check for inventory
-                inventory_dir:= kubespray_dir+"/inventory";
-                if customer then
-                    inventory_ini:= discovery.fileGet(h, inventory_dir+customer.result+"/inventory.ini");
-                else
-                    for file in ks_dir do
-                        if file.file_type = "Directory" then
-                            if file.name in [ "sample", "local", "vmware-dev", "vmware-innovation" ] then
-                                //skip
-                                continue;
-                            else
-                                inventory_ini:= discovery.fileGet(h, inventory_dir+file.name+"/inventory.ini");
-                            end if;
-                        end if;
-                    end for;
+                    values_yml:= discovery.fileGet(h, install_dir+"/congenica-deployments/installer_v1/values.yaml");   
                 end if;
             end if;
 
             // Kubernetes info
-            k_version:= discovery.runCommand(h, "kubectl version");
-            k_nodes:= discovery.runCommand(h, "kubectl get nodes");
-            k_labels:= discovery.runCommand(h, "kubectl get nodes --show-labels");
-            k_pods:= discovery.runCommand(h, "kubectl -n kube-system get pods");
+            k_version:= discovery.runCommand(h, "/usr/local/bin/kubectl version");
+            k_nodes:= discovery.runCommand(h, "/usr/local/bin/kubectl get nodes");
+            k_labels:= discovery.runCommand(h, "/usr/local/bin/kubectl get nodes --show-labels");
+            k_pods:= discovery.runCommand(h, "/usr/local/bin/kubectl -n kube-system get pods");
 
             // Helm info
             helm_ls:= discovery.runCommand(h, "helm ls -A -a");
@@ -441,6 +458,11 @@ pattern Congenica_BAI 1.0
         end if;
 
         host:= related.host(si);
+
+        // Get Billing info
+        if si.port then
+            q := PostgreSQL.getBilling(endpoint:= host, database:= db_instance, port:= si.port);
+        end if;
 
         // Congenica Specific Configuration
         conf:= discovery.fileGet(host, "/etc/postgresql/11/main/postgresql.conf");
