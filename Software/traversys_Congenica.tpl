@@ -7,7 +7,7 @@ end metadata;
 
 from traversys_defs import traversys 1.0;
 
-definitions PostgreSQL 1.3
+definitions PostgreSQL 1.4
     """Queries for Postgres DB"""
 
     type := sql_discovery;
@@ -40,6 +40,13 @@ definitions PostgreSQL 1.3
             List of samples and sizes.
         """
         query:= "SELECT cache_table_size_mb, genome, exome, clinical_exome, genepanel, unknown_sample FROM core.patient_billing AS pb;";
+    end define;
+
+    define dbSizes
+        """
+            Get DB Sizes (is this already captured OOTB?)
+        """
+        query:= "SELECT db.datname AS db_name ,pg_size_pretty(pg_database_size(db.datname)) AS db_size FROM pg_database AS db ORDER BY pg_database_size(db.datname) desc;";
     end define;
 
     define getSampleSizes_script
@@ -632,6 +639,7 @@ pattern Congenica_BAI 1.0
         // Get Billing info
         if si.port then
             billing := PostgreSQL.getBilling(endpoint:= host, database:= db_instance, port:= si.port);
+            sizes := PostgreSQL.dbSizes(endpoint:= host, database:= db_instance, port:= si.port);
             samples := PostgreSQL.getSampleSizes(endpoint:= host, database:= db_instance, port:= si.port);
             times := PostgreSQL.sampleTimes(endpoint:= host, database:= db_instance, port:= si.port);
             migrations:= PostgreSQL.dbMigrations(endpoint:= host, database:= db_instance, port:= si.port);
