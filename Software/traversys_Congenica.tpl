@@ -7,7 +7,7 @@ end metadata;
 
 from traversys_defs import traversys 1.0;
 
-definitions PostgreSQL 1.0
+definitions PostgreSQL 1.3
     """Queries for Postgres DB"""
 
     type := sql_discovery;
@@ -20,6 +20,176 @@ definitions PostgreSQL 1.0
         """
        query := "SELECT * FROM core.get_customer_billing_patient_counts(array['']);";
     end define;
+
+    define dbMigrations
+        """
+            List of DB migrations, showing software versions.
+        """
+        query:= "SELECT script_finish_time, release_name FROM core.schema_change_log ORDER BY script_finish_time desc;";
+    end define;
+
+    define sampleTimes
+        """
+            List of sample processing times.
+        """
+        query:= "SELECT *, age(patient_loaded, ir_created) AS ir_loading_time FROM core.patient_billing;";
+    end define;
+
+    define getSampleSizes
+        """
+            List of samples and sizes.
+        """
+        query:= "SELECT cache_table_size_mb, genome, exome, clinical_exome, genepanel, unknown_sample FROM core.patient_billing AS pb;";
+    end define;
+
+    define getSampleSizes_script
+        """
+            Customer sample sizes.
+        """
+       query := '''
+                    SELECT "toplevel"."code" as "customer"
+                    ,"child"."code" as "project_code"
+                    ,"ir"."reference" as "interpretation_request_reference"
+                    ,"ir"."interpretation_request_id" as "interpretation_request_id"
+                    ,"ir"."created" as "ir_created"
+                    ,"patient"."reference" as "patient_reference"
+                    ,"patient"."patient_id" as "patient_id"
+                    ,"patient"."created" as "patient_created"
+                    ,"patient"."status" as "patient_status"
+                    ,"sample"."genome"::boolean as "is_whole_genome_sample"
+                    ,"sample"."exome"::boolean as "is_exome_sample"
+                    ,"sample"."clinical_exome"::boolean as "is_clinical_exome_sample"
+                    ,"sample"."genepanel"::boolean as "is_gene_panel_sample"
+                    ,"sample"."unknown_sample"::boolean as "is_unknown_sample"
+                    ,(SELECT ARRAY_AGG(DISTINCT "dft"."name")
+                        FROM "core"."job_queue_patient" "jqp"
+                        JOIN "core"."job_queue_input_file" USING ("job_id")
+                        JOIN "core"."data_file" USING ("data_file_id")
+                        JOIN "core"."data_file_subtype" USING ("data_file_subtype_id")
+                        JOIN "core"."data_file_type" "dft" USING ("data_file_type_id")
+                        WHERE "jqp"."patient_id" = "sample"."patient_id") as "input_file_types"
+                FROM "core"."interpretation_request_estimate_sample_type" "sample"
+                JOIN "core"."patient" USING ("patient_id")
+                JOIN "core"."project" "child"
+                    ON ("child"."project_id" = "patient"."project_id")
+                JOIN "core"."project" "toplevel"
+                    ON ("child"."path" <@ "toplevel"."path" AND nlevel("toplevel"."path") = 2)
+                LEFT JOIN "core"."interpretation_request" "ir"
+                    ON ("ir"."interpretation_request_id" = "sample"."interpretation_request_id")
+                WHERE "toplevel"."code" = 'Default Root Project'
+                ORDER BY "child"."path" ASC
+                        ,"ir"."interpretation_request_id"
+                        ,"patient"."patient_id";
+                ''';
+    end define;
+
+    define wgsSampleSizes
+        """
+            Get WGS Sample Sizes
+        """
+        query := '''
+                    WITH "_cache_tables" AS (
+                    SELECT "cl"."reltuples" AS "variant_count"
+                            ,"substring"("cl"."relname"::text, 41, 20)::integer AS "patient_id"
+                            ,CASE WHEN "ps"."n_distinct" > 0 THEN "ps"."n_distinct"::bigint ELSE abs("ps"."n_distinct" * "cl"."reltuples")::bigint END as "gene_count"
+                            ,("relpages"::bigint * 8 * 1024) as size
+                            ,"cl"."relname"::text as tab_name
+                        FROM "pg_class" as "cl"
+                        JOIN "pg_namespace" AS "n"  --Schemas
+                        ON "n"."oid" = "cl"."relnamespace"
+                        JOIN "pg_stats" AS "ps"
+                        ON "cl"."relname" = "ps"."tablename"
+                    WHERE "cl"."relname" SIMILAR TO 'table_of_patient_snv_to_gene_transcript_[0-9]*'
+                        AND "n"."nspname" = 'cache_2'
+                        AND "ps"."attname" = 'gene_name'
+                    )
+                    ,"_snv_tables" AS (
+                    SELECT "cl"."reltuples"
+                            ,"substring"("cl"."relname"::text, 13, 20)::integer AS "patient_id"
+                            ,("cl"."relpages"::bigint * 8 * 1024) as size
+                            ,"cl"."relname"::text as "tab_name"
+                        FROM "pg_class" "cl"
+                        JOIN "pg_namespace" "n"
+                        ON "n"."oid" = "cl"."relnamespace"
+                    WHERE "cl"."relname" ~ similar_escape('patient_snv_[0-9]*'::text, NULL::text)
+                        AND "n"."nspname" = 'core'::name
+                    )
+                    SELECT "p"."patient_id"
+                        ,"ct"."variant_count"::bigint as "cache_2.table_..._N records"
+                        ,"st"."reltuples"::bigint as "patient_snv_N records"
+                        ,"ct"."gene_count"::bigint as "genes_with_SNVs"
+                        ,pg_size_pretty("ct"."size" + "c_ind"."indexes_size") as "cache_2.table_..._N size"
+                        ,pg_size_pretty("st"."size" + "s_ind"."indexes_size") as "patient_snv_N size"
+                        ,pg_size_pretty("ct"."size" + "st"."size" + "s_ind"."indexes_size" + "c_ind"."indexes_size") as "Database sample size"
+                        ,pg_size_pretty(ROUND(("ct"."size" + "st"."size" + "c_ind"."indexes_size" + "s_ind"."indexes_size")/"st"."reltuples"::bigint)) as "Database size per SNV"
+                    FROM (SELECT "patient_id" FROM "core"."patient" ORDER BY "patient_id" DESC LIMIT 3000) "p"
+                    JOIN "_cache_tables" "ct"
+                        ON ("ct"."patient_id" = "p"."patient_id"
+                            AND COALESCE("ct"."gene_count"::bigint, 0::bigint) > 7500
+                            AND COALESCE("ct"."variant_count"::bigint, 0::bigint) >= 1000000        )
+                    JOIN "_snv_tables" "st" ON "st"."patient_id" = "p"."patient_id"
+                    JOIN LATERAL (SELECT SUM(pg_relation_size("pi"."schemaname"||'.'||"pi"."indexname")) as "indexes_size"
+                                    FROM "pg_indexes" "pi"
+                                    WHERE "pi"."tablename" = "ct"."tab_name") "c_ind" ON true
+                    JOIN LATERAL (SELECT SUM(pg_relation_size("pi"."schemaname"||'.'||"pi"."indexname")) as "indexes_size"
+                                    FROM "pg_indexes" "pi"
+                                    WHERE "pi"."tablename" = "st"."tab_name") "s_ind" ON true;
+                ''';
+        end define;
+
+        define wesSampleSizes
+        """
+            Get WES Sample Sizes
+        """
+        query := '''
+                    WITH "_cache_tables" AS (
+                    SELECT "cl"."reltuples" AS "variant_count"
+                            ,"substring"("cl"."relname"::text, 41, 20)::integer AS "patient_id"
+                            ,CASE WHEN "ps"."n_distinct" > 0 THEN "ps"."n_distinct"::bigint ELSE abs("ps"."n_distinct" * "cl"."reltuples")::bigint END as "gene_count"
+                            ,("relpages"::bigint * 8 * 1024) as size
+                            ,"cl"."relname"::text as tab_name
+                        FROM "pg_class" as "cl"
+                        JOIN "pg_namespace" AS "n"  --Schemas
+                        ON "n"."oid" = "cl"."relnamespace"
+                        JOIN "pg_stats" AS "ps"
+                        ON "cl"."relname" = "ps"."tablename"
+                    WHERE "cl"."relname" SIMILAR TO 'table_of_patient_snv_to_gene_transcript_[0-9]*'
+                        AND "n"."nspname" = 'cache_2'
+                        AND "ps"."attname" = 'gene_name'
+                    )
+                    ,"_snv_tables" AS (
+                    SELECT "cl"."reltuples"
+                            ,"substring"("cl"."relname"::text, 13, 20)::integer AS "patient_id"
+                            ,("cl"."relpages"::bigint * 8 * 1024) as size
+                            ,"cl"."relname"::text as "tab_name"
+                        FROM "pg_class" "cl"
+                        JOIN "pg_namespace" "n"
+                        ON "n"."oid" = "cl"."relnamespace"
+                    WHERE "cl"."relname" ~ similar_escape('patient_snv_[0-9]*'::text, NULL::text)
+                        AND "n"."nspname" = 'core'::name
+                    )
+                    SELECT "p"."patient_id"
+                        ,"ct"."variant_count"::bigint as "cache_2.table_..._N records"
+                        ,"st"."reltuples"::bigint as "patient_snv_N records"
+                        ,"ct"."gene_count"::bigint as "genes_with_SNVs"
+                        ,pg_size_pretty("ct"."size" + "c_ind"."indexes_size") as "cache_2.table_..._N size"
+                        ,pg_size_pretty("st"."size" + "s_ind"."indexes_size") as "patient_snv_N size"
+                        ,pg_size_pretty("ct"."size" + "st"."size" + "s_ind"."indexes_size" + "c_ind"."indexes_size") as "Database sample size"
+                        ,pg_size_pretty(ROUND(("ct"."size" + "st"."size" + "c_ind"."indexes_size" + "s_ind"."indexes_size")/"st"."reltuples"::bigint)) as "Database size per SNV"
+                    FROM (SELECT "patient_id" FROM "core"."patient" ORDER BY "patient_id" DESC LIMIT 100000) "p"
+                    JOIN "_cache_tables" "ct"
+                        ON ("ct"."patient_id" = "p"."patient_id"
+                            AND COALESCE("ct"."gene_count"::bigint, 0::bigint) > 2000
+                            AND COALESCE("ct"."variant_count"::bigint, 0::bigint) BETWEEN 1 AND 999999 )
+                    JOIN "_snv_tables" "st" ON "st"."patient_id" = "p"."patient_id"
+                    JOIN LATERAL (SELECT SUM(pg_relation_size("pi"."schemaname"||'.'||"pi"."indexname")) as "indexes_size"
+                                    FROM "pg_indexes" "pi"
+                                    WHERE "pi"."tablename" = "ct"."tab_name") "c_ind" ON true
+                    JOIN LATERAL (SELECT SUM(pg_relation_size("pi"."schemaname"||'.'||"pi"."indexname")) as "indexes_size"
+                                    FROM "pg_indexes" "pi"
+                                    WHERE "pi"."tablename" = "st"."tab_name") "s_ind" ON true;
+                ''';
+        end define;
 
 end definitions;
 
@@ -461,7 +631,10 @@ pattern Congenica_BAI 1.0
 
         // Get Billing info
         if si.port then
-            q := PostgreSQL.getBilling(endpoint:= host, database:= db_instance, port:= si.port);
+            billing := PostgreSQL.getBilling(endpoint:= host, database:= db_instance, port:= si.port);
+            samples := PostgreSQL.getSampleSizes(endpoint:= host, database:= db_instance, port:= si.port);
+            times := PostgreSQL.sampleTimes(endpoint:= host, database:= db_instance, port:= si.port);
+            migrations:= PostgreSQL.dbMigrations(endpoint:= host, database:= db_instance, port:= si.port);
         end if;
 
         // Congenica Specific Configuration
