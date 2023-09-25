@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<reports version="2.0">
+    <time-series-channel name="Channel.Congenica_Samples" time-series="7">
+        <title>Sample Count Over Time</title>
+        <description>
+            Number of samples submitted over time.
+        </description>
+        <kind>Detail</kind>
+        <order-by>patient_id</order-by>
+        <where>type = "Sample"</where>
+        <show>
+            project_id, type, sample_type, ir_id, patient_id
+        </show>
+    </time-series-channel>
+    <time-series-channel name="Channel.SIs" time-series="7">
+        <title>Software Instances</title>
+        <description>
+            Number of SIs over time.
+        </description>
+        <kind>SoftwareInstance</kind>
+        <order-by>type</order-by>
+        <show>
+            summary
+        </show>
+    </time-series-channel>
+    <chart-channel name="Channel.Congenica_Sample_Types" default="pie">
+        <title>Samples by Type Submitted</title>
+        <description>Shows a list of type of samples submitted</description>
+        <split>sample_type</split>
+        <kind>Detail</kind>
+        <where>type = "Sample"</where>
+        <show>
+            project_id, type, sample_type, ir_id, patient_id
+        </show>
+    </chart-channel>
+</reports>

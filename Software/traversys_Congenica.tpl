@@ -322,6 +322,23 @@ pattern Congenica_SI_Containers 1.0
         container_type:= kube_type;
         install_dir:= defaults.data_dir;
 
+        customer:= void;
+        release:= void;
+        assembly:= void;
+        pipe_release:= void;
+        web_release:= void;
+        cadd_release:= void;
+        bundle_release:= void;
+        ref_data_root:= void;
+        helm_v:= none;
+        k_version:= none;
+
+        ansible_conf_path:= void;
+        cluster_yml_path:= void;
+        kreqs_txt_path:= void;
+        inventory_ini_path:= void;
+        values_yml_path:= void;
+        
         // Bastion Node Identification
         if p.args matches regex "\bcontainerd\b" then
             si_type:= "Bastion Node";
@@ -350,16 +367,21 @@ pattern Congenica_SI_Containers 1.0
                     kubespray_dir:= regex.extract(ansible_f.result, regex "(\/\S+\/kubespray-(\d+\.?)+)", raw "\1");
                     if ansible_cfg then
                         ansible_conf:= discovery.fileGet(h, ansible_cfg);
+                        ansible_conf_path:= ansible_conf.path;
                     end if;
                     if kubespray_dir then
                         ks_dir:= discovery.listDirectory(h, kubespray_dir);
                         cluster_yml:= discovery.fileGet(h, kubespray_dir+"/cluster.yml");
+                        cluster_yml_path:= cluster_yml.path;
                         dockerfile:= discovery.fileGet(h, kubespray_dir+"/Dockerfile");
                         kreqs_txt:= discovery.fileGet(h, kubespray_dir+"/requirements.txt");
+                        kreqs_txt_path:= kreqs_txt.path;
+        
                         // Check for inventory
                         inventory_dir:= kubespray_dir+"/inventory";
                         if customer then
                             inventory_ini:= discovery.fileGet(h, inventory_dir+"/"+text.strip(text.strip(customer.result, "\n"))+"/inventory.ini");
+                            inventory_ini_path:= inventory_ini.path;
                         else
                             for file in ks_dir do
                                 if file.file_type = "Directory" then
@@ -368,12 +390,14 @@ pattern Congenica_SI_Containers 1.0
                                         continue;
                                     else
                                         inventory_ini:= discovery.fileGet(h, inventory_dir+file.name+"/inventory.ini");
+                                        inventory_ini_path:= inventory_ini.path;
                                     end if;
                                 end if;
                             end for;
                         end if;
                     end if;
-                    values_yml:= discovery.fileGet(h, install_dir+"/congenica-deployments/installer_v1/values.yaml");   
+                    values_yml:= discovery.fileGet(h, install_dir+"/congenica-deployments/installer_v1/values.yaml"); 
+                    values_yml_path:= values_yml.path;
                 end if;
             end if;
 
@@ -390,8 +414,6 @@ pattern Congenica_SI_Containers 1.0
 
             // Docker info
             images:= discovery.runCommand(h, "docker images");
-            
-
 
         end if;
 
@@ -416,6 +438,41 @@ pattern Congenica_SI_Containers 1.0
                                      version := v,
                                      product_version := pv);
         log.info("Created SI %si.name%");
+
+        if si_type = "Bastion Node" then
+            if customer and customer.result then
+                si.customer:= customer.result;
+            end if;
+            if release and release.result then
+                si.release:= release.result;
+            end if;
+            if assembly and assembly.result then
+                si.assembly:= assembly.result;
+            end if;
+            if pipe_release and pipe_release.result then
+                si.pipeline_release:= pipe_release.result;
+            end if;
+            if bundle_release and bundle_release.result then
+                si.bundle_release:= bundle_release.result;
+            end if;
+            if ref_data_root and ref_data_root.result then
+                si.ref_data_root:= ref_data_root.result;
+            end if;
+        end if;
+
+        si.install_dir:= install_dir;
+        if helm_v and helm_v.result then
+            si.helm_version:= helm_v.result;
+        end if;
+        if k_version and k_version.result then
+            si.kubernetes_version:= k_version.result;
+        end if;
+
+        si.ansible_conf:= ansible_conf_path;
+        si.cluster_yaml:= cluster_yml_path;
+        si.kubespray_reqs:= kreqs_txt_path;
+        si.inventory_ini:= inventory_ini_path;
+        si.values_yaml:= values_yml_path;
 
         // Get list of images
         images_cmd := discovery.runCommand(h, 'docker images --no-trunc --format "{{.Repository}} : {{.Tag}} : {{.Digest}} : {{.ID}} : {{.Size}}" 2>/dev/null' );
@@ -635,6 +692,8 @@ pattern Congenica_BAI 1.0
         end if;
 
         host:= related.host(si);
+        times:= none;
+        sizes:= none;
 
         // Get Billing info
         if si.port then
@@ -643,6 +702,16 @@ pattern Congenica_BAI 1.0
             samples := PostgreSQL.getSampleSizes(endpoint:= host, database:= db_instance, port:= si.port);
             times := PostgreSQL.sampleTimes(endpoint:= host, database:= db_instance, port:= si.port);
             migrations:= PostgreSQL.dbMigrations(endpoint:= host, database:= db_instance, port:= si.port);
+        end if;
+
+        if sizes then
+            for db in databases do
+                for row in sizes do
+                    if row.db_name = db.instance then
+                        db.size:= row.db_size;
+                    end if;
+                end for;
+            end for;
         end if;
 
         // Congenica Specific Configuration
@@ -712,6 +781,38 @@ pattern Congenica_BAI 1.0
             model.rel.Dependency(Dependant := bai, DependedUpon := databases);
         //end if;
 
+        if times then
+            dtype:= "unknown_sample";
+            for sample in times do
+                if sample.clinical_exome > 0 then
+                    dtype:= "clinical_exome";
+                elif sample.exome > 0 then
+                    dtype:= "exome";
+                elif sample.genepanel > 0 then
+                    dtype:= "genepanel";
+                elif sample.genome > 0 then
+                    dtype:= "genome";
+                elif sample.oncology > 0 then
+                    dtype:= "oncology";
+                end if;
+                sample_dt:= model.Detail(
+                    key:= "%sample.patient_id%/%sample.interpretation_request_id%/%sample.project_id%",
+                    name:= "Sample for Patient ID: %sample.patient_id%",
+                    sample_size_mb:= sample.cache_table_size_mb,
+                    sample_type:= dtype,
+                    type:= "Sample",
+                    gene_count:= sample.gene_count,
+                    ir_id:= sample.interpretation_request_id,
+                    ir_created:= sample.ir_created,
+                    patient_id:= sample.patient_id,
+                    project_id:= sample.project_id,
+                    read_depth:= sample.read_depth,
+                    varient_count:= sample.varient_count
+                );
+                model.rel.Detail(ElementWithDetail:= bai, Detail:= sample_dt);
+            end for;
+        end if;
+
         etc_hosts:= discovery.fileGet(host, "/etc/hosts");
         if etc_hosts and etc_hosts.md5sum then
             bastion:= regex.extract(etc_hosts.content, regex "(\b(\d{1,3}\.?)+\b)\s+bastion\n", raw "\1");
@@ -726,7 +827,25 @@ pattern Congenica_BAI 1.0
                         //Associate:Inference:InferredElement:Host
                         //model.rel.Inference(Associate:=bai,Host:=bastion_host);
                         bai.bastion := "%bastion_host.name% %bastion%";
-                        model.addDisplayAttribute(bai, [ "bastion" ]);
+                        bastion_sis:= search(in bastion_host traverse Host:HostedSoftware:RunningSoftware:SoftwareInstance where type = "Bastion Node");
+                        if size(bastion_sis) > 0 then
+                            bastion_si := bastion_sis[0];
+                            bai.customer:= bastion_si.customer;
+                            bai.release := bastion_si.release;
+                            //bal.assembly:= bastion_si.assembly;
+                            bai.pipeline_release:= bastion_si.pipeline_release;
+                            bai.bundle_release:= bastion_si.bundle_release;
+                            bai.ref_data_dir:= bastion_si.ref_data_root;
+                            bai.install_dir:= bastion_si.install_dir;
+                            bai.helm_version:= bastion_si.helm_version;
+                            bai.kubernetes_version:= bastion_si.kubernetes_version;
+                            bai.ansible_conf:= bastion_si.ansible_conf;
+                            bai.cluster_yaml:= bastion_si.cluster_yaml;
+                            bai.kubespray_reqs:= bastion_si.kubespray_reqs;
+                            bai.inventory_ini:= bastion_si.inventory_ini;
+                            bai.values_yaml:= bastion_si.values_yaml;
+                            model.addDisplayAttribute(bai, [ "bastion", "customer", "ref_data_dir", "install_dir", "cluster_yaml", "kubespray_reqs", "inventory_ini", "values_yaml" ]);
+                        end if;
                     end if;
                 end if;
             end if;
