@@ -448,5 +448,4 @@ identify SkyIQ 1.0
 	windows_cmd "Identify\.PersonKeyService"                         -> "traversys", "Sky IQ Identify Person Key Service";
 	regex "\b(?i)elements(\.foundation)?\.logger(\.server)?\.service(\.exe)?$"    -> "traversys", "Sky IQ Elements Logger Service";
 	regex "\b(?i)elements(\.foundation)?\.messenger(\.server)?\.service(\.exe)?$" -> "traversys", "Sky IQ Elements Messenger Service";
-	regex "\b(?i)(identify\.)?addresscleanse(service)?(\.exe)?$"                  -> "traversys", "Sky IQ Identify AddressCleanse Service";	
-end identify;		
+	regex "\b(?i)(identify\.)?addresscleanse(service)?(\.exe)?$"                  -> "traversys", "Sky IQ Identify AddressCleanse Service";	end identify;		

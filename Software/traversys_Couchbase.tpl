@@ -80,5 +80,4 @@ end pattern;
 identify Couchbase 1.0
     tags Couchbase;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    regex '/opt/couchbase(\S+)?' -> 'traversys', 'Couchbase Server';
-end identify;
+    regex '/opt/couchbase(\S+)?' -> 'traversys', 'Couchbase Server';end identify;

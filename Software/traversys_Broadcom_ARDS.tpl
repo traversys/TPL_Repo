@@ -79,5 +79,4 @@ identify BroadcomARDS 1.0
     tags Broadcom, ARDS;
     DiscoveredProcess cmd -> set_by, simple_identity;
     windows_cmd 'lwdbsrvc' -> 'traversys', 'Broadcom Advantage Repository for Distributed Systems';
-    windows_cmd 'lwudsrvr' -> 'traversys', 'Broadcom Advantage Repository for Distributed Systems';
-end identify;
+    windows_cmd 'lwudsrvr' -> 'traversys', 'Broadcom Advantage Repository for Distributed Systems';end identify;

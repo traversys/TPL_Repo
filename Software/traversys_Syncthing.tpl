@@ -628,5 +628,4 @@ identify Syncthing 1.0
     DiscoveredProcess cmd -> set_by, simple_identity;
     unix_cmd 'syncthing' -> 'traversys', 'Syncthing';
     windows_cmd 'syncthing' -> 'traversys', 'Syncthing';
-    windows_cmd 'SyncTrayzor' -> 'traversys', 'SyncTrayzor';
-end identify;
+    windows_cmd 'SyncTrayzor' -> 'traversys', 'SyncTrayzor';end identify;

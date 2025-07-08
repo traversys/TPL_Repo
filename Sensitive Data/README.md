@@ -19,5 +19,4 @@ extract(content, regex "[\'\"]password[\"\']:\s*(\S+)", raw "\1") as "Custom Fil
 ## Custom Filters
 
 `(?i)password\s+(\S+)`
-
 `\'\"]password[\"\']:\s*(\S+)`

@@ -57,5 +57,4 @@ end pattern;
 identify BentleyPWIP 1.0
     tags Bentley;
     DiscoveredProcess cmd -> simple_identity;
-    windows_cmd 'pidrpcs' -> "Bentley Projectwise InterPlot Server";
-end identify;
+    windows_cmd 'pidrpcs' -> "Bentley Projectwise InterPlot Server";end identify;

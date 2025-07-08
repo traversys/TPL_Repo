@@ -205,5 +205,4 @@ identify ArcGIS 1.0
     windows_cmd 'Aims_Tasker' -> "traversys", "Esri ArcGIS Application Server";
     windows_cmd 'ArcSOCMon' -> "traversys", "Esri ArcGIS Object Manager";
     windows_cmd 'ArcSOM' -> "traversys", "Esri ArcGIS Object Manager";
-    windows_cmd 'Geocortex\.Agent\.Runner' -> "traversys", "Esri ArcGIS GeoRINM Server";
-end identify;
+    windows_cmd 'Geocortex\.Agent\.Runner' -> "traversys", "Esri ArcGIS GeoRINM Server";end identify;

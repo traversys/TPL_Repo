@@ -72,5 +72,4 @@ end pattern;
 identify OpenOffice 1.0
     tags OpenOffice;
     DiscoveredProcess cmd, args -> set_by, simple_identity;
-    unix_cmd 'java', regex "^.*org.openadaptor.adaptor.RunAdaptor" -> 'traversys', 'DNA Systems OpenAdapter';
-end identify;
+    unix_cmd 'java', regex "^.*org.openadaptor.adaptor.RunAdaptor" -> 'traversys', 'DNA Systems OpenAdapter';end identify;

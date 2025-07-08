@@ -219,5 +219,4 @@ end pattern;
 identify fms 1.0
     tags fms;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    unix_cmd 'frmweb' -> 'traversys', 'Network Rail FMS Webserver';
-end identify;
+    unix_cmd 'frmweb' -> 'traversys', 'Network Rail FMS Webserver';end identify;

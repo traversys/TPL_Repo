@@ -87,5 +87,4 @@ identify ArchestrA 1.0
     DiscoveredProcess cmd -> set_by, simple_identity;
     windows_cmd 'aa(Logger|Bootstrap)' -> 'traversys', 'ArchestrA System Platform';
     windows_cmd 'Alarmmgr' -> 'traversys', 'ArchestrA System Platform';
-    windows_cmd 'aah(\w+)Svc' -> 'traversys', 'ArchestrA System Platform';
-end identify;
+    windows_cmd 'aah(\w+)Svc' -> 'traversys', 'ArchestrA System Platform';end identify;

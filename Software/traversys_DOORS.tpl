@@ -99,5 +99,4 @@ end pattern;
 identify DOORS 1.0
     tags DOORS;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'doorsd' -> 'traversys', 'IBM Rational DOORS';
-end identify;
+    windows_cmd 'doorsd' -> 'traversys', 'IBM Rational DOORS';end identify;

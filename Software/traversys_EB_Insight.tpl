@@ -91,5 +91,4 @@ end pattern;
 identify eb 1.0
     tags eb;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'eB\.Service\.Manager' -> 'traversys', 'Bentley eB Insight';
-end identify;
+    windows_cmd 'eB\.Service\.Manager' -> 'traversys', 'Bentley eB Insight';end identify;
