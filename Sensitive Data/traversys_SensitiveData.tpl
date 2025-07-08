@@ -15,7 +15,8 @@ configuration target 1.0
                         "random_2.txt",
                         "plaintext.xml"
                     ];
-    "Path" path := """/Users/Documents/GitHub/TPL_Repo/Sensitive Data/""";
+    // Use a relative path so the pattern is portable
+    "Path" path := """./Sensitive Data/""";
 
 end configuration;
 
