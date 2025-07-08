@@ -1,6 +1,6 @@
 # TPL Repository of Custom TPL for BMC Discovery
 
-**Caution:** These patterns are not gauranteed to work and contain bugs.
+**Caution:** These patterns are not guaranteed to work and contain bugs.
 
 # Toolbox
 
