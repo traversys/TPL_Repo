@@ -82,5 +82,4 @@ end pattern;
 identify NICEInform 1.0
 	tags NICEInform;
 	DiscoveredProcess cmd -> set_by, simple_identity;
-	windows_cmd 'Nice\.Inform\.Server' -> "traversys", "NICE Inform Server Process";
-end identify;
+	windows_cmd 'Nice\.Inform\.Server' -> "traversys", "NICE Inform Server Process";end identify;

@@ -54,5 +54,4 @@ end pattern;
 identify ALCRM 1.0
     tags ALCRM;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    regex '\b(?i)alcrm\b.*/wrapper$' -> 'traversys', 'Network Rail ARCLM Webserver';
-end identify;
+    regex '\b(?i)alcrm\b.*/wrapper$' -> 'traversys', 'Network Rail ARCLM Webserver';end identify;

@@ -66,5 +66,4 @@ identify ArcIMS 1.0
     windows_cmd 'esri'          -> 'traversys', 'Esri ArcIMS Route Server';
     windows_cmd 'aims_appserver'-> 'traversys', 'Esri ArcIMS Application Server';
     windows_cmd 'aims_tasker'   -> 'traversys', 'Esri ArcIMS Tasker';
-    windows_cmd 'aims_monitor'  -> 'traversys', 'Esri ArcIMS Monitor';
-end identify;
+    windows_cmd 'aims_monitor'  -> 'traversys', 'Esri ArcIMS Monitor';end identify;

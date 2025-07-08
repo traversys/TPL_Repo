@@ -60,5 +60,4 @@ end identify;
 identify PAIRS_args 1.0
     tags PAIRS;
     DiscoveredProcess args -> set_by, simple_identity;
-    regex '\\SchedJobs\\PEARS' -> 'traversys', 'Network Rail PAIRS';
-end identify;
+    regex '\\SchedJobs\\PEARS' -> 'traversys', 'Network Rail PAIRS';end identify;

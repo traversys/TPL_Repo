@@ -101,5 +101,4 @@ identify Coda 1.0
     tags Coda;
     DiscoveredProcess cmd -> set_by, simple_identity;
     regex "(?i)\bcodajavasrv(\.exe)?$" -> "traversys", "Unit4 Coda Finance";
-    regex "(?i)\boasnsv(\.exe)$" ->  "traversys", "Unit4 Coda Name Server";
-end identify;
+    regex "(?i)\boasnsv(\.exe)$" ->  "traversys", "Unit4 Coda Name Server";end identify;

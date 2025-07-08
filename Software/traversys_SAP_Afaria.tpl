@@ -112,5 +112,4 @@ identify Afaria 1.0
     tags Afaria;
     DiscoveredProcess cmd -> set_by, simple_identity;
     windows_cmd 'agd' -> 'traversys', 'SAP Sybase M-Business Anywhere';
-	windows_cmd 'agsoap' -> 'traversys', 'SAP Sybase M-Business Anywhere';
-end identify;
+	windows_cmd 'agsoap' -> 'traversys', 'SAP Sybase M-Business Anywhere';end identify;

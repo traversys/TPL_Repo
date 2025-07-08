@@ -55,5 +55,4 @@ end pattern;
 identify MicroGen 1.0
     tags MicroGen;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'apt(exe|srv|bus|eng)' -> 'traversys', 'MicroGen Aptitude';
-end identify;
+    windows_cmd 'apt(exe|srv|bus|eng)' -> 'traversys', 'MicroGen Aptitude';end identify;

@@ -73,5 +73,4 @@ end pattern;
 identify Solidus_eCare 1.0
     tags Solidus, eCare;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'ccas' -> 'traversys', 'Ericsson Solidus eCare';
-end identify;
+    windows_cmd 'ccas' -> 'traversys', 'Ericsson Solidus eCare';end identify;

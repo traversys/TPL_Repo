@@ -892,5 +892,4 @@ end pattern;
 identify Congenica 1.0
     tags congenica;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    unix_cmd 'kubelet' -> 'traversys', 'Congenica Tertiary Analysis Node';
-end identify;
+    unix_cmd 'kubelet' -> 'traversys', 'Congenica Tertiary Analysis Node';end identify;

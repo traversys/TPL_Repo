@@ -56,5 +56,4 @@ end pattern;
 identify OrgPlus 1.0
     tags OrgPlus;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'OPEService' -> 'traversys', 'Insperity OrgPlus';
-end identify;
+    windows_cmd 'OPEService' -> 'traversys', 'Insperity OrgPlus';end identify;

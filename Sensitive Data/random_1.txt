@@ -1,3 +1,2 @@
 // Random data
-username=crypto
-password=can_u_see_me?
+username=cryptopassword=can_u_see_me?

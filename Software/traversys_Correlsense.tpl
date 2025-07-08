@@ -59,5 +59,4 @@ end pattern;
 identify BroadcomARDS 1.0
     tags Broadcom, ARDS;
     DiscoveredProcess cmd, args -> set_by, simple_identity;
-    unix_cmd 'java', regex "\b(?i)correlsense\b" -> 'traversys', 'Correlsense APM';
-end identify;
+    unix_cmd 'java', regex "\b(?i)correlsense\b" -> 'traversys', 'Correlsense APM';end identify;

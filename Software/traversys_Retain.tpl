@@ -56,5 +56,4 @@ end pattern;
 identify Retain 1.0
     tags Retain;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'RetainServer' -> 'traversys', 'Micro Focus Retain';
-end identify;
+    windows_cmd 'RetainServer' -> 'traversys', 'Micro Focus Retain';end identify;

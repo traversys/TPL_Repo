@@ -75,5 +75,4 @@ end pattern;
 identify DocLoader 1.0
     tags DockLoader;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'DocLoader' -> 'traversys', 'Idox McLaren DocLoader';
-end identify;
+    windows_cmd 'DocLoader' -> 'traversys', 'Idox McLaren DocLoader';end identify;
