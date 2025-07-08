@@ -1,3 +1,9 @@
+This repository contains files under multiple open-source licenses. Unless a file
+indicates otherwise, it is licensed under the Apache License, Version 2.0.
+Files in the Toolbox directory and traversys_License.tpl are under GPL-3.0-or-later.
+Several modules in the Software directory include MIT license notices.
+See README.md for a directory-by-directory summary.
+
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
