@@ -186,5 +186,4 @@ identify ProjectWise 1.0
     windows_cmd 'PubImaging' -> "traversys", "Bentley Systems GeoWeb Publisher";
     windows_cmd 'PubServer' -> "traversys", "Bentley Systems GeoWeb Publisher";
     windows_cmd 'DataPreparation' -> "traversys", "Bentley Systems GeoWeb Publisher Automation Service";
-    regex '\bBentleyLoggingServer' -> "traversys", "Bentley Systems Logging Server";
-end identify;
+    regex '\bBentleyLoggingServer' -> "traversys", "Bentley Systems Logging Server";end identify;

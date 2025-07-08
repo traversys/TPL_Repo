@@ -81,5 +81,4 @@ end pattern;
 identify assyst 1.0
     tags assyst;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'assyst' -> 'traversys', 'Axios Assyst';
-end identify;
+    windows_cmd 'assyst' -> 'traversys', 'Axios Assyst';end identify;

@@ -54,5 +54,4 @@ end pattern;
 identify Janusnet 1.0
     tags Janusnet;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'HOUIDSserver' -> 'traversys', 'Janusnet Access Control';
-end identify;
+    windows_cmd 'HOUIDSserver' -> 'traversys', 'Janusnet Access Control';end identify;

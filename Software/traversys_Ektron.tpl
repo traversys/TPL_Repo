@@ -55,5 +55,4 @@ end pattern;
 identify Ektron 1.0
     tags Ektron;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'Ektron\.ASM\.EktronServices' -> 'traversys', 'Optimizely Ektron CMS';
-end identify;
+    windows_cmd 'Ektron\.ASM\.EktronServices' -> 'traversys', 'Optimizely Ektron CMS';end identify;

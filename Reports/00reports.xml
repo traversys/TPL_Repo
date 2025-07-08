@@ -32,5 +32,4 @@
         <show>
             project_id, type, sample_type, ir_id, patient_id
         </show>
-    </chart-channel>
-</reports>
+    </chart-channel></reports>

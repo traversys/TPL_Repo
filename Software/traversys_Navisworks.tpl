@@ -53,5 +53,4 @@ end pattern;
 identify Navisworks 1.0
 	tags Navisworks;
 	DiscoveredProcess cmd -> set_by, simple_identity;
-	windows_cmd 'LcLicServer' -> "traversys", "Autodesk Navisworks Licence Server";
-end identify;
+	windows_cmd 'LcLicServer' -> "traversys", "Autodesk Navisworks Licence Server";end identify;

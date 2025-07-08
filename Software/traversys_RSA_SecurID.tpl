@@ -55,5 +55,4 @@ end pattern;
 identify SecurID 1.0
     tags SecurID;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd '_mprosrv' -> 'traversys', 'RSA SecurID ACE/Server';
-end identify;
+    windows_cmd '_mprosrv' -> 'traversys', 'RSA SecurID ACE/Server';end identify;

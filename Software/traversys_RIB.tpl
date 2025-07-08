@@ -59,5 +59,4 @@ identify Lizenzmanagement 1.0
     tags Lizenzmanagement;
     DiscoveredProcess cmd -> set_by, simple_identity;
     windows_cmd 'NetCounterLM'          -> 'traversys', 'RIB Lizenzmanagement';
-    windows_cmd 'RIB\.License\.Server'  -> 'traversys', 'RIB Lizenzmanagement';
-end identify;
+    windows_cmd 'RIB\.License\.Server'  -> 'traversys', 'RIB Lizenzmanagement';end identify;

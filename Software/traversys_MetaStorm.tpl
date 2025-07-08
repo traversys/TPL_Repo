@@ -122,5 +122,4 @@ identify MetaStorm 1.0
 	tags MetaStorm;
 	DiscoveredProcess cmd -> set_by, simple_identity;
 	windows_cmd 'eEngine' -> "traversys", "Nesscomp MetaStorm BPM Process Engine";
-	windows_cmd 'Metastorm\sEvent\sMonitor' -> "traversys", "Nesscomp MetaStorm BPM Event Monitor";
-end identify;
+	windows_cmd 'Metastorm\sEvent\sMonitor' -> "traversys", "Nesscomp MetaStorm BPM Event Monitor";end identify;

@@ -15,7 +15,8 @@ configuration target 1.0
                         "random_2.txt",
                         "plaintext.xml"
                     ];
-    "Path" path := """/Users/Documents/GitHub/TPL_Repo/Sensitive Data/""";
+    // Use a relative path so the pattern is portable
+    "Path" path := """./Sensitive Data/""";
 
 end configuration;
 
@@ -73,5 +74,4 @@ end pattern;
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE// SOFTWARE.

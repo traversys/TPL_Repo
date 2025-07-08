@@ -85,5 +85,4 @@ end pattern;
 identify it2 1.0
     tags it2;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'IT2SS' -> 'traversys', 'ION IT2 Application Server';
-end identify;
+    windows_cmd 'IT2SS' -> 'traversys', 'ION IT2 Application Server';end identify;

@@ -79,5 +79,4 @@ identify BroadcomLicensing 1.0
     regex '(?i)\bCA.*\blic(\d+)?rmtd?' -> 'traversys', 'Broadcom CA License Server';
     regex '(?i)\blicrmt\b' -> 'traversys', 'Broadcom CA License Client';
     regex '(?i)\bCA.*\blic(\d+)?services\.exe' -> 'traversys', 'Broadcom CA License Client';
-    regex '(?i)\bCA.*\blic(\d+)?fds' -> 'traversys', 'Broadcom CA License Client';
-end identify;
+    regex '(?i)\bCA.*\blic(\d+)?fds' -> 'traversys', 'Broadcom CA License Client';end identify;

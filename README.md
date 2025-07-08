@@ -1,6 +1,6 @@
 # TPL Repository of Custom TPL for BMC Discovery
 
-**Caution:** These patterns are not gauranteed to work and contain bugs.
+**Caution:** These patterns are not guaranteed to work and contain bugs.
 
 ## Licensing
 Unless a file states otherwise, the contents of this repository are licensed under the Apache License, Version 2.0. Specific directories and files use different licenses:

@@ -57,5 +57,4 @@ end pattern;
 identify Qube 1.0
     tags Qube;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'ecs' -> 'traversys', 'MRI Qube Property Management';
-end identify;
+    windows_cmd 'ecs' -> 'traversys', 'MRI Qube Property Management';end identify;

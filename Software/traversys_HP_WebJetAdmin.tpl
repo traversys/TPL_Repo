@@ -73,5 +73,4 @@ end pattern;
 identify WebJetAdmin 1.0
     tags WebJetAdmin;
     DiscoveredProcess cmd, args -> set_by, simple_identity;
-    windows_cmd 'HPWJAService', '-AppID=WjaService' -> 'traversys', 'HP Web Jetadmin';
-end identify;
+    windows_cmd 'HPWJAService', '-AppID=WjaService' -> 'traversys', 'HP Web Jetadmin';end identify;

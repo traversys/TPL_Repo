@@ -84,5 +84,4 @@ identify FASTInStream 1.0
     tags FASTInStream;
     DiscoveredProcess cmd -> set_by, simple_identity;
     unix_cmd 'fsearchctrl' -> 'traversys', 'Oracle Siebel Bookshelf FAST InStream';
-    windows_cmd 'fsearch' -> 'traversys', 'Oracle Siebel Bookshelf FAST InStream';
-end identify;
+    windows_cmd 'fsearch' -> 'traversys', 'Oracle Siebel Bookshelf FAST InStream';end identify;

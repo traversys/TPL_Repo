@@ -124,5 +124,4 @@ end identify;
 identify BraveBrowser_all 1.0
     tags brave, browser;
     DiscoveredProcess cmd, args -> set_by, simple_identity;
-    unix_cmd 'bash', regex '\bbrave-browser' -> 'traversys', 'Brave Web Browser';
-end identify;
+    unix_cmd 'bash', regex '\bbrave-browser' -> 'traversys', 'Brave Web Browser';end identify;

@@ -403,5 +403,4 @@ identify Nastel 1.0
 	windows_cmd "nsqmgr"  -> "traversys", "Nastel Navigator M6-WMQ Workgroup Server";
 	windows_cmd "nsqmq"   -> "traversys", "Nastel Navigator M6-WMQ Agent";
 	windows_cmd "nsqmsg"  -> "traversys", "Nastel Navigator M6-WMQ Message Server";
-	windows_cmd "nsqpub"  -> "traversys", "Nastel Navigator M6-WMQ Publish/Subscriber";
-end identify;
+	windows_cmd "nsqpub"  -> "traversys", "Nastel Navigator M6-WMQ Publish/Subscriber";end identify;

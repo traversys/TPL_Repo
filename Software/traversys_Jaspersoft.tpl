@@ -76,5 +76,4 @@ end pattern;
 identify Jaspersoft 1.0
     tags Jaspersoft;
     DiscoveredProcess cmd -> set_by, simple_identity;
-    windows_cmd 'jasperreportsPostgreSQL' -> 'traversys', 'TIBCO Jaspersoft Reports';
-end identify;
+    windows_cmd 'jasperreportsPostgreSQL' -> 'traversys', 'TIBCO Jaspersoft Reports';end identify;
