@@ -1,4 +1,4 @@
-tpl 1.9 module traversys_OpenOffice;
+tpl 1.9 module traversys_ArchestrA;
 
 metadata
     origin := "Traversys";
