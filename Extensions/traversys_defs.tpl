@@ -78,7 +78,7 @@ definitions print 1.1
 
 end definitions;
 
-definitions traversys 1.1
+definitions traversys 1.2
     """
         Custom Traversys Functions
 
@@ -89,6 +89,7 @@ definitions traversys 1.1
         2023-06-13 | 1.1 | WMF | Fixed missing param on build_key().
                                  Fixed some missing semi-colons and relationship
                                  keyword on quick relationships func.
+        2025-12-21 | 1.2 | WMF | Added nkv function for name, key, version, product_version extraction.
 
     """
     
@@ -199,6 +200,73 @@ definitions traversys 1.1
 
         return version, product_version, revision, build, description, display;
 
+    end define;
+
+    define build_key(list_of_attrs, hash:=false) -> key
+        """
+            List of values in order, with hash option
+        """
+        if hash then
+            key:= text.hash(text.join(list_of_attrs, "/"));
+        else
+            key:= text.join(list_of_attrs, "/");
+        end if;
+        return key;
+    end define;
+
+    define nkv(host, type, instance:=none, environment:=none, packages:=none) -> name, key, version, product_version
+        """
+            Return name, key and version attributes.
+        """
+        
+        _key := [ type, '%host.key%' ];
+        _name := [ type ];
+        version:= none;
+        product_version:= none;
+
+        for pkg in packages do
+            if "version" in pkg then
+                if pkg.version > version then
+                    version := pkg.version;
+                    product_version:= regex.extract(version, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= version);
+                    list.append(display, "version");
+                    list.append(display, "product_version");
+                    if "revision" in pkg then
+                        revision := pkg.revision;
+                        list.append(display, "revision");
+                    end if;
+                    if "description" in pkg then
+                        description:= pkg.description;
+                        list.append(display, "description");
+                    end if;
+                    if "build" in pkg then
+                        build := pkg.build;
+                        list.append(display, "build");
+                    end if;
+                end if;
+            end if;
+        end for;
+
+        // TPL has no self update/assignment, so we will build a list
+        if product_version then
+            list.append(_key, product_version);
+            list.append(_name, product_version);
+        end if;
+
+        if instance then
+            list.append(_key, instance);
+            list.append(_name, "identified as " + instance);
+        end if;
+        if environment then
+            list.append(_key, environment);
+            list.append(_name, "running in " + environment);
+        end if;
+
+        key:= build_key(_key, hash:=false);
+        list.append(_name, "on %host.name%");
+        name:= text.join(_name, " ");
+
+        return name, key, version, product_version;
     end define;
     
     define communicatingServices(si) -> commSIs, dds, dbs
@@ -352,18 +420,6 @@ definitions traversys 1.1
         else
             n[attr]:= void;
         end if;
-    end define;
-
-    define build_key(list_of_attrs, hash:=false) -> key
-        """
-            List of values in order, with hash option
-        """
-        if hash then
-            key:= text.hash(text.join(list_of_attrs, "/"));
-        else
-            key:= text.join(list_of_attrs, "/");
-        end if;
-        return key;
     end define;
 
     define display_attrs(n,l)
@@ -671,7 +727,7 @@ definitions output 1.0
 
 end definitions;
 
-  definitions specials 1.0
+definitions specials 1.0
     """ 
         Special Functions.
 
