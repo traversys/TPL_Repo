@@ -229,19 +229,14 @@ definitions traversys 1.2
                 if pkg.version > version then
                     version := pkg.version;
                     product_version:= regex.extract(version, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= version);
-                    list.append(display, "version");
-                    list.append(display, "product_version");
                     if "revision" in pkg then
                         revision := pkg.revision;
-                        list.append(display, "revision");
                     end if;
                     if "description" in pkg then
                         description:= pkg.description;
-                        list.append(display, "description");
                     end if;
                     if "build" in pkg then
                         build := pkg.build;
-                        list.append(display, "build");
                     end if;
                 end if;
             end if;
