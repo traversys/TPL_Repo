@@ -219,45 +219,63 @@ definitions traversys 1.2
             Return name, key and version attributes.
         """
         
-        _key := [ type, '%host.key%' ];
-        _name := [ type ];
+        _key := list();
+        print.debug(false, "_key initialised: %_key%");
+        list.append(_key, type);
+        print.debug(false, "_key added type: %_key%");
+        list.append(_key, '%host.key%');
+        print.debug(false, "_key added host key: %_key%");
+        _name := list();
+        list.append(_name, type);
         version:= none;
         product_version:= none;
 
-        for pkg in packages do
-            if "version" in pkg then
-                if pkg.version > version then
-                    version := pkg.version;
-                    product_version:= regex.extract(version, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= version);
-                    if "revision" in pkg then
-                        revision := pkg.revision;
-                    end if;
-                    if "description" in pkg then
-                        description:= pkg.description;
-                    end if;
-                    if "build" in pkg then
-                        build := pkg.build;
+        if packages and size(packages) > 0 then
+            for pkg in packages do
+                if "version" in pkg then
+                    if pkg.version > version then
+                        version := pkg.version;
+                        print.debug(false, "Version is %version%");
+                        product_version:= regex.extract(version, regex "(\d+(?:\.\d+)?)", raw "\1", no_match:= version);
+                        print.debug(false, "Product version is %product_version%");
+                        if "revision" in pkg then
+                            revision := pkg.revision;
+                        end if;
+                        if "description" in pkg then
+                            description:= pkg.description;
+                        end if;
+                        if "build" in pkg then
+                            build := pkg.build;
+                        end if;
                     end if;
                 end if;
-            end if;
-        end for;
+            end for;
+        end if;
 
         // TPL has no self update/assignment, so we will build a list
         if product_version then
+            print.debug(false, "Product version is set to %product_version%");
+            print.data_type(false, "pv datatype", product_version);
             list.append(_key, product_version);
+            print.debug(false, "_key added product version: %_key%");
             list.append(_name, product_version);
         end if;
 
         if instance then
             list.append(_key, instance);
-            list.append(_name, "identified as " + instance);
+            print.debug(false, "_key added instance: %_key%");
+            list.append(_name, "identified as %instance%");
         end if;
         if environment then
             list.append(_key, environment);
-            list.append(_name, "running in " + environment);
+            print.debug(false, "_key added environment: %_key%");
+            list.append(_name, "running in %environment%");
         end if;
 
-        key:= build_key(_key, hash:=false);
+        print.debug(false, "Key is set to %_key%");
+        print.data_type(false, "Key datatype", _key);
+
+        key:= text.join(_key, "/");
         list.append(_name, "on %host.name%");
         name:= text.join(_name, " ");
 
