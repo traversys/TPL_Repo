@@ -17,8 +17,63 @@ configuration psuedoVault 1.0
 
     "Username" username := "";
     "Password" password := "";
+    "Additional Credentials" credentials := [];
 
 end configuration;
+
+definitions vaultUtils 1.0
+    """Utility functions for obscuring credentials"""
+
+    define obscure(secret) -> out
+        if not secret then
+            out := secret;
+            return out;
+        end if;
+        chars := regex.extractAll(secret, regex ".");
+        rev := "";
+        len := size(chars);
+        for i in number.range(len) do
+            rev := rev + chars[len - 1 - i];
+        end for;
+        out := "REV:" + rev;
+        return out;
+    end define;
+
+    define reveal(obscured) -> out
+        if not obscured then
+            out := obscured;
+            return out;
+        end if;
+        if obscured matches regex '^REV:' then
+            rev := regex.extract(obscured, regex '^REV:(.*)$', raw '\1');
+            chars := regex.extractAll(rev, regex ".");
+            plain := "";
+            len := size(chars);
+            for i in number.range(len) do
+                plain := plain + chars[len - 1 - i];
+            end for;
+            out := plain;
+        else
+            out := obscured;
+        end if;
+        return out;
+    end define;
+
+    define credential_password(config, user:=none) -> out
+        """Return the stored password for a user"""
+        out := none;
+        if user and config._cred_store then
+            enc := config._cred_store[user];
+            if enc then
+                out := reveal(enc);
+            end if;
+        elif not user then
+            out := reveal(config._p);
+        end if;
+        return out;
+    end define;
+
+end definitions;
 
 pattern updatePsuedoVault 1.0
 
@@ -33,9 +88,9 @@ pattern updatePsuedoVault 1.0
     3) If the _p variable is set, the current password can be wiped
     4) If the username has been reset to default, then set current password to default
 
-    TODO:
-    - Research method to encrypt or add further obscurity - SSH/API data source?
-    - Multiple credential storage
+    Features:
+    - Stored passwords are obscured using a reversible method.
+    - Multiple credentials can be supplied as a list of "user:password" entries.
 
     Change History:
     2022-03-19 1.0 WMF : Created.
@@ -84,12 +139,13 @@ pattern updatePsuedoVault 1.0
 
         if config.password_current then
             // Password set
-            if config._p = config.password_current then
+            enc := vaultUtils.obscure(config.password_current);
+            if config._p = enc then
                 // The current password is visible - remove from UI
                 config.password_current := none;
                 stop;
             else // Stored password differs
-                config._p := config.password_current;
+                config._p := enc;
             end if;
 
             // Final check
@@ -99,6 +155,19 @@ pattern updatePsuedoVault 1.0
         elif config.username_current = config.username_default then
             // Login has been reset
             config._p := config.password_default;
+        end if;
+
+        if config.credentials_current then
+            store := table();
+            for cred in config.credentials_current do
+                if cred matches regex '^([^:]+):(.*)$' then
+                    user := regex.extract(cred, regex '^([^:]+):', raw '\1');
+                    pass := regex.extract(cred, regex '^[^:]+:(.*)$', raw '\1');
+                    store[user] := vaultUtils.obscure(pass);
+                end if;
+            end for;
+            config._cred_store := store;
+            config.credentials_current := none;
         end if;
 
     end body;

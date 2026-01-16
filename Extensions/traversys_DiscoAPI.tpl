@@ -54,7 +54,7 @@ pattern traversys_discoAPI 1.0
         username:= psuedoVault.username;
         configs:=search(PatternConfiguration where name = "PsuedoVault.psuedoVault");
         config:=configs[0];
-        password:= config._p;
+        password:= PsuedoVault.reveal(config._p);
         payload:= "grant_type=password&username=%username%&password=%password%";
         log.debug("payload=%payload%");
         token:= discovery.restfulPost(selfDS, "oauth2", "/api/token",payload);
